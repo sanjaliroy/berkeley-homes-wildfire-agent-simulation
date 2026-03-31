@@ -131,7 +131,6 @@ class MemoryStream:
         self,
         seeds: List[dict],
         client_anthropic,
-        client_openai,
         agent_seed_narrative: str,
     ):
         """
@@ -139,15 +138,11 @@ class MemoryStream:
 
         Each seed dict has: description, importance (optional), type.
         If importance is not set, calls score_importance() to get it via LLM.
-        Calls embed() to generate the embedding via OpenAI.
-
-        Clients are passed explicitly (initialised once in notebook via init_clients())
-        following the course studio pattern.
+        Calls embed() to generate the embedding (free HuggingFace model, no API key needed).
 
         Args:
             seeds:                 List of seed dicts from agent YAML.
             client_anthropic:      Anthropic client (from client.init_clients()).
-            client_openai:         OpenAI client (from client.init_clients()).
             agent_seed_narrative:  The agent's seed narrative (for importance scoring context).
         """
         from src.llm.client import embed, score_importance
@@ -162,7 +157,7 @@ class MemoryStream:
             if importance is None:
                 importance = score_importance(client_anthropic, description, agent_seed_narrative)
 
-            embedding = embed(client_openai, description)
+            embedding = embed(description)
 
             self.add(
                 description=description,
