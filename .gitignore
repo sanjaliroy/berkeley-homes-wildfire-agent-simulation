@@ -1,0 +1,5 @@
+outputs/runs/          # JSONL run logs (can get large)
+data/embeddings_cache/ # cached embeddings
+__pycache__/
+.DS_Store
+*.pyc
