@@ -21,10 +21,10 @@ from dataclasses import dataclass
 
 @dataclass
 class Config:
-    DECISION_MODEL: str = "claude-sonnet-4-5-20251001"
+    DECISION_MODEL: str = "claude-sonnet-4-5"
     DECISION_MAX_TOKENS: int = 1024
     DECISION_TEMPERATURE: float = 0.7
-    REFLECTION_MODEL: str = "claude-opus-4-5-20251001"
+    REFLECTION_MODEL: str = "claude-opus-4-5"
     REFLECTION_MAX_TOKENS: int = 512
     REFLECTION_TEMPERATURE: float = 0.4
     IMPORTANCE_MAX_TOKENS: int = 5
