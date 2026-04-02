@@ -1,0 +1,55 @@
+scenario_name: baseline
+description: Standard intervention sequence for ablation and model comparison experiments
+duration_days: 60
+events:
+- day: 1
+  type: wildfire_news
+  channel: news_media
+  target_agents: all
+  content: A fast-moving wildfire in Napa County has burned over 2,000 acres and destroyed
+    15 homes since Saturday. Cal Fire has deployed additional resources as dry winds
+    are expected to continue through the week. Authorities are urging residents in
+    high-risk areas throughout the Bay Area to review their defensible space and evacuation
+    plans.
+- day: 10
+  type: defensible_space_law
+  channel: official_mail
+  target_agents: all
+  content: Dear Resident, this letter is to inform you that under Assembly Bill 3074,
+    the defensible space requirements for your property have been updated. You are
+    now required to maintain a Zone 0 ember-resistant area within 0-5 feet of your
+    structure, in addition to the existing Zone 1 and Zone 2 requirements. Compliance
+    inspections will begin in your area within 90 days.
+- day: 21
+  type: fire_service_doorknock
+  channel: social
+  target_agents: Jennifer
+  content: A uniformed fire prevention officer from the Berkeley Fire Department knocks
+    on your door. They explain they are conducting defensible space assessments in
+    the neighborhood as part of a Firewise USA community initiative. They offer to
+    walk your property and point out areas where vegetation management could reduce
+    your wildfire risk.
+- day: 30
+  type: neighbor_clearing_brush
+  channel: social
+  target_agents: Jennifer
+  content: You notice your neighbor Tom spending the weekend clearing dead brush and
+    trimming tree branches that overhang his roof. He mentions he hired a defensible
+    space contractor after getting a notice from the fire department. He says the
+    contractor quoted him $1,200 for the full property.
+- day: 42
+  type: insurance_non_renewal
+  channel: official_mail
+  target_agents: Jennifer
+  content: Dear Policyholder, we regret to inform you that your homeowners insurance
+    policy will not be renewed upon its expiration date of August 15, 2026. This decision
+    is based on our assessment of elevated wildfire risk in your area. You may be
+    eligible for coverage through the California FAIR Plan.
+- day: 55
+  type: nearby_wildfire
+  channel: direct_experience
+  target_agents: all
+  content: A wildfire has broken out in the hills approximately 3 miles from your
+    home. You can see a large smoke plume from your backyard and smell smoke in the
+    air. Local authorities have issued an evacuation warning for your neighborhood.
+    Emergency vehicles are passing frequently on the main road.
