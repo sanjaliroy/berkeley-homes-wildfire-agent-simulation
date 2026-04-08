@@ -30,12 +30,16 @@ class Memory:
     importance: int             # LLM-scored 1–10
     embedding: np.ndarray       # vector embedding (shape: [EMBEDDING_DIM])
     type: str                   # 'observation' | 'decision' | 'reflection' | 'conversation'
+    last_accessed: Optional[int] = None  # updated by retrieval.py; None means use timestamp
 
     def __post_init__(self):
         if self.type not in MEMORY_TYPES:
             raise ValueError(f"Memory type '{self.type}' must be one of {MEMORY_TYPES}")
         if not (1 <= self.importance <= 10):
             raise ValueError(f"Importance must be 1–10, got {self.importance}")
+        # default last_accessed to creation time so recency decay starts from the right point
+        if self.last_accessed is None:
+            self.last_accessed = self.timestamp
 
     def to_dict(self) -> dict:
         """Serialise to dict for JSONL logging (embedding stored as list)."""
@@ -45,6 +49,7 @@ class Memory:
             "importance": self.importance,
             "embedding": self.embedding.tolist(),
             "type": self.type,
+            "last_accessed": self.last_accessed,
         }
 
     def __repr__(self) -> str:
