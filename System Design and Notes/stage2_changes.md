@@ -207,57 +207,80 @@ Run `stage2_validation.ipynb` sections in order:
 
 ## Next steps
 
-### Step A: Lock in Stage 2 results (do this first)
-
-Run `stage2_validation.ipynb` end-to-end with Jennifer and record the winning configs. Specifically:
-
-- **Best `RetrievalConfig`:** record top-K, weights, and mode from Section 2. Hardcode this as `best_retrieval_cfg` in the notebook for Sections 3–5.
-- **Best `ReflectionConfig`:** record threshold and num_questions from Section 3.
-- **Generation baseline:** record Jennifer's overall score from Section 4 — this is the number all future changes need to beat.
-- **Ablation findings:** note which component (memory / retrieval scoring / reflection) has the biggest impact on overall score.
-
-These become the reference numbers for the project. Write them down somewhere durable (the notebook outputs or a short results section here).
+**Status:** Initial Jennifer validation complete. Now refining params across Lola + synthetic agents before locking and moving to the simulation loop.
 
 ---
 
-### Step B: Validate configs on Lola (cross-agent check)
+### Step A: Build Lola's agent YAML ✅ (do next)
 
-Lola's transcript is already set aside as the validation agent. Build `config/agents/lola.yaml` using the same YAML structure as `jennifer.yaml` (persona, seed memories, held-out responses). Then run `stage2_validation.ipynb` with Lola using the winning configs from Step A — **without re-tuning**.
-
-Goal: confirm the configs generalise to a different agent. If Lola's scores are significantly lower than Jennifer's, the configs may be overfit and need adjustment before moving to Stage 3.
+Lola's transcript is set aside as the validation agent. Build `config/agents/lola.yaml` using the same structure as `jennifer.yaml` (seed narrative, core beliefs, memory seeds, held-out responses). This is the ground-truth agent for cross-validation.
 
 ---
 
-### Step C: Synthetic agents (optional, for retrieval robustness)
+### Step B: Cross-agent retrieval and reflection tuning
 
-If retrieval tuning needs more signal — e.g. the Jennifer/Lola scores are similar and you want to stress-test edge cases — generate 2–3 synthetic homeowner profiles using a different LLM (GPT-4o or DeepSeek via OpenRouter). The YAML format is already defined; the LLM just needs to fill it in with a plausible fictional homeowner persona, seed memories, and a held-out scenario.
+Run `stage2_validation.ipynb` on each of the following agents using the candidate configs from the Jennifer run. The goal is to find configs that score consistently well across all agents — not just Jennifer.
 
-Synthetic agents expand the evaluation dataset cheaply. They are not ground-truth validated (no real interview), so use them for retrieval and reflection tuning only — not for final generation evaluation.
+**Agents to test (in order of priority):**
+1. **Lola** (`lola.yaml`) — ground-truth validation agent; scores here are the primary signal
+2. **Synthetic_Tester1** — financially constrained, partial compliance; stresses retrieval of cost/grant memories
+3. **Synthetic_Tester4** — active denier; tests whether reflection correctly surfaces resistant beliefs rather than compliant ones
+4. **Synthetic_Tester5** — compliant but insurance dropped; the most complex memory stream (pride → betrayal → withdrawal); stress-tests reflection accuracy
+5. **Synthetic_Tester3** — uninformed newcomer; few seeds, low-importance memories; tests retrieval when the stream is sparse
+
+Testers 2 (passive complier) is lower priority — their memory stream is simple and unlikely to surface edge cases.
+
+**What to look for across agents:**
+- Retrieval relevance scores should stay above ~7/10 across all agent types, not just Jennifer
+- Reflection accuracy score (currently ~7/10 on Jennifer), identify any ways to improve this
+- Generation scores on Lola are the key number — this is real interview data
+- Continue to refine with agent seed changes by Madeleine and Amrita
+
+**How to run:** Swap `AGENT_CONFIG_PATH` in `stage2_validation.ipynb` to point at each agent YAML in turn. Export results to CSV after each run so scores are comparable across agents.
 
 ---
 
-### Step D: Stage 3 — simulation loop (main build work)
+### Step C: Lock in parameters
 
-Once Stage 2 configs are locked, Stage 3 adds the infrastructure to run a full multi-agent simulation. Files to build (in order):
+Once scores are stable across Lola and at least 2–3 synthetic agents, record the winning configs:
 
-1. **`src/agents/agent.py`** — `Agent` class wrapping the cognition cycle: `perceive()` → `retrieve()` → `decide()` → `act()` → `store()`. This is the main new class. Each agent holds a reference to its `MemoryStream`, its config YAML, and its current state (compliance status, attitude, actions taken).
+- **`RetrievalConfig`:** top-K, weights, retrieval_mode — hardcode as the default in the notebook
+- **`ReflectionConfig`:** threshold, num_questions
+- **Generation baseline:** Lola's overall score — this is the number Stage 3 must not regress on
+
+Write the locked values here (fill in after running):
+
+```
+Best RetrievalConfig:  top_k=__ recency_weight=__ importance_weight=__ relevance_weight=__ mode=__
+Best ReflectionConfig: threshold=__ num_questions=__
+Jennifer overall score: __/10
+Lola overall score:     __/10
+```
+
+---
+
+### Step D: Stage 3 — simulation loop
+
+Once params are locked, Stage 3 adds the infrastructure to run a full multi-agent simulation. Files to build (in order):
+
+1. **`src/agents/agent.py`** — `Agent` class wrapping the cognition cycle: `perceive()` → `retrieve()` → `decide()` → `act()` → `store()`. Each agent holds a reference to its `MemoryStream`, its config YAML, and current state (compliance status, attitude, actions taken).
 
 2. **`src/engine/scheduler.py`** — `EventScheduler` class. Loads the intervention schedule from `baseline.yaml` into a heapq priority queue. Method: `get_events(tick)` returns all events due on that day.
 
-3. **`src/environment/channels.py`** — Channel framing. Takes a raw event and wraps it in channel-specific language (official mail reads differently from a social conversation). The four channels from the design are: `official_mail`, `news_media`, `social`, `direct_experience`.
+3. **`src/environment/channels.py`** — Channel framing. Takes a raw event and wraps it in channel-specific language. The four channels: `official_mail`, `news_media`, `social`, `direct_experience`.
 
-4. **`src/engine/simulation.py`** — The tick loop. Per tick: get events from scheduler → frame via channels → run cognition cycle for each targeted agent → check reflection thresholds → log. Keep it thin; the heavy logic lives in `agent.py`.
+4. **`src/engine/simulation.py`** — The tick loop. Per tick: get events → frame via channels → run cognition cycle for each targeted agent → check reflection thresholds → log. Keep it thin; heavy logic lives in `agent.py`.
 
-5. **`src/output/logger.py`** — Structured JSONL logging. One entry per event with fields: `tick`, `agent`, `event_type`, `channel`, `retrieved_memories`, `decision`, `reasoning`, `new_memories`. The `decision` / `reasoning` split is important — it lets the judge score them independently.
+5. **`src/output/logger.py`** — Structured JSONL logging. One entry per event: `tick`, `agent`, `event_type`, `channel`, `retrieved_memories`, `decision`, `reasoning`, `new_memories`. The `decision` / `reasoning` split lets the judge score them independently.
 
-6. **`config/scenarios/baseline.yaml`** — Scenario definition: duration, tick interval, intervention schedule (list of `{day, type, channel, target_agents, content}`). Start with 3–5 agents and a 30-day timeline before scaling.
+6. **`config/scenarios/baseline.yaml`** — Scenario definition: duration, tick interval, intervention schedule (`{day, type, channel, target_agents, content}`). Start with 3 agents and a 30-day timeline.
 
-7. **`notebooks/run_simulation.ipynb`** — Runner notebook. Loads config, runs the loop tick by tick, and renders inline summaries after each tick (agent decisions, new memories, reflections fired). Include helper functions: `inspect_agent()`, `inspect_memory()`, `compare_agents()`.
+7. **`notebooks/run_simulation.ipynb`** — Runner notebook. Tick-by-tick inline summaries (decisions, new memories, reflections fired). Helper functions: `inspect_agent()`, `inspect_memory()`, `compare_agents()`.
 
-Build and test with 2 agents (Jennifer + one other) before adding more. The per-tick cost can grow quickly — check token counts early.
+Build and test with Jennifer + Synthetic_Tester1 first (contrasting compliance profiles). Check token counts per tick before scaling to more agents.
 
 ---
 
 ### Step E: After simulation loop works — social network
 
-`src/environment/network.py` and `src/agents/conversation.py` come after the basic loop is stable. These are Stage 4 per the system design. Don't build them until `run_simulation.ipynb` produces clean per-agent JSONL for at least a 3-agent, 30-day run.
+`src/environment/network.py` and `src/agents/conversation.py` are Stage 4. Don't build until `run_simulation.ipynb` produces clean JSONL for at least a 3-agent, 30-day run.
