@@ -85,8 +85,8 @@ def _synthesise_insight(
     citing the specific experiences that led to it.
     """
     memories_text = "\n".join(
-        f"[Memory {i+1} | Day {m.timestamp} | importance {m.importance}/10] {m.description}"
-        for i, m in enumerate(relevant_memories)
+        f"[Memory #{m.id} | Day {m.timestamp} | {m.type} | importance {m.importance}/10] {m.description}"
+        for m in relevant_memories
     )
     system = (
         f"{agent_seed}\n\n"
@@ -96,7 +96,7 @@ def _synthesise_insight(
         f"Question: {question}\n\n"
         f"Relevant memories:\n{memories_text}\n\n"
         "In 1-3 sentences, write a first-person belief or insight that answers this question. "
-        "Be specific. Reference which memories (by number) shaped this belief."
+        "Be specific. Reference which memories shaped this belief using their Memory # labels."
     )
     message = client_anthropic.messages.create(
         model=config.REFLECTION_MODEL,

@@ -31,6 +31,7 @@ class Memory:
     embedding: np.ndarray       # vector embedding (shape: [EMBEDDING_DIM])
     type: str                   # 'observation' | 'decision' | 'reflection' | 'conversation'
     last_accessed: Optional[int] = None  # updated by retrieval.py; None means use timestamp
+    id: int = field(default=0)  # stable stream position, set by MemoryStream.add()
 
     def __post_init__(self):
         if self.type not in MEMORY_TYPES:
@@ -44,6 +45,7 @@ class Memory:
     def to_dict(self) -> dict:
         """Serialise to dict for JSONL logging (embedding stored as list)."""
         return {
+            "id": self.id,
             "timestamp": self.timestamp,
             "description": self.description,
             "importance": self.importance,
@@ -54,7 +56,7 @@ class Memory:
 
     def __repr__(self) -> str:
         return (
-            f"Memory(day={self.timestamp}, type={self.type}, "
+            f"Memory(id={self.id}, day={self.timestamp}, type={self.type}, "
             f"importance={self.importance}, "
             f"desc='{self.description[:60]}...')"
         )
@@ -96,6 +98,7 @@ class MemoryStream:
             The created Memory object.
         """
         memory = Memory(
+            id=len(self._memories),
             timestamp=timestamp,
             description=description,
             importance=importance,
@@ -183,7 +186,7 @@ class MemoryStream:
         print(f"\n{'='*60}")
         print(f"Memory stream: {self.agent_name} ({self.count()} total memories)")
         print(f"{'='*60}")
-        for i, m in enumerate(memories):
-            print(f"\n[{i+1}] Day {m.timestamp} | {m.type.upper()} | Importance: {m.importance}/10")
+        for m in memories:
+            print(f"\n[#{m.id}] Day {m.timestamp} | {m.type.upper()} | Importance: {m.importance}/10")
             print(f"    {m.description}")
         print(f"{'='*60}\n")
