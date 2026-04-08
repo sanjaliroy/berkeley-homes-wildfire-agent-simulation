@@ -20,12 +20,13 @@ jobs:
         env:
           GDRIVE_SERVICE_ACCOUNT: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
         run: |
+          echo "$GDRIVE_SERVICE_ACCOUNT" > /tmp/sa.json
           mkdir -p ~/.config/rclone
-          cat > ~/.config/rclone/rclone.conf << EOF
+          cat > ~/.config/rclone/rclone.conf << 'EOF'
           [gdrive]
           type = drive
           scope = drive
-          service_account_credentials = ${GDRIVE_SERVICE_ACCOUNT}
+          service_account_file = /tmp/sa.json
           EOF
 
       - name: Sync to Google Drive
