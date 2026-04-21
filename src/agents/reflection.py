@@ -3,7 +3,7 @@ reflection.py — Periodic belief synthesis via two-step reflection.
 
 Implements Park et al. (2023)'s reflection process:
   Step 1 — Generate N high-level questions from recent memories.
-            ("What is Jennifer most concerned about right now?")
+            ("What is Margaret most concerned about right now?")
   Step 2 — For each question, retrieve relevant memories and synthesise an insight.
             ("I am increasingly worried that insurance feels arbitrary — memories 2, 5, 8 show...")
 
