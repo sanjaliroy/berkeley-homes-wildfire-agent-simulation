@@ -111,3 +111,33 @@ held_out_responses:
       but they don't seem to have a clue.
     context: "Margaret has done DIY work herself and avoided the contractor market so far. An interviewer asks whether she has faced difficulty accessing knowledgeable contractors."
     source: "data/interview_transcripts/Jennifer - Feb 25 at 1_03 PM.docx"
+
+  diy_zone_zero:
+    real_response: |
+      Lucky for me, [I have a] handy husband — I'm willing to labor also. We started in the front,
+      we just sort of do a little bit at a time. We started in the front and wanted to try to think
+      of a way to do the five feet thing that would still look attractive. That was a big thing. We
+      created a little patio in front of our house, you know, five foot out from the house, and we
+      did the work ourselves. We Googled 'how do you build a patio' and we know somebody around the
+      corner who's a contractor, so we asked him. Somebody was trying to get rid of bricks, so we
+      got free bricks. It took like three weeks and we did all the digging and [paving] and all that
+      stuff ourselves and built this little patio. We spend a lot of time on Etsy looking at garden
+      art — trying to find a way to make it look like it doesn't just have to be five feet of boring
+      gravel all around your house. It can still look nice. There were some websites and YouTube and
+      they all said the same thing — it didn't take that long to figure out. You have to do this many
+      inches of this, and this many inches of that. Pretty straightforward.
+    context: "An interviewer asks how Margaret approaches home hardening projects herself — whether she Googles, sources materials, etc. Margaret describes her DIY zone-zero patio project."
+    source: "data/interview_transcripts/Jennifer - Feb 25 at 1_03 PM.docx"
+
+  fencing_cost:
+    real_response: |
+      The general impression I get is we're needing to do some fencing. And I find that intimidating —
+      how to go about it, how to go about finding the right thing. There aren't that many of them, and
+      not that many kinds of materials. It seems expensive — a neighbour two doors down just did a
+      metal fence and I think it was upwards of $30,000. It was a lot of money. Just the fence, just
+      just a fence. I know some other neighbours further down the street that put in a more attractive
+      looking one, and I think it's even more expensive — they spent thirty thousand dollars on a
+      pretty basic looking fence. So yeah, it's expensive. It doesn't seem like a good deal — having
+      to spend this much, and it just makes your home look less aesthetically pleasing.
+    context: "Margaret describes her situation with fencing — she knows she needs to replace wooden gates and fencing but finds the contractor market thin, expensive, and the aesthetic options limited."
+    source: "data/interview_transcripts/Jennifer - Feb 25 at 1_03 PM.docx"
