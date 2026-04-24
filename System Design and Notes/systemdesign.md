@@ -123,15 +123,15 @@ wildfire-sim/
 
 All model choices live in the `Config` dataclass in `src/llm/client.py`. This is the single place to change which LLM is used for each role. The notebook creates a `Config` object and can override any field for an experiment without touching source files.
 
-| Role | Config field | Default | Notes |
+| Role | Config field | Default (Exp 2 Variant 1 baseline) | Notes |
 |---|---|---|---|
-| Agent decisions | `DECISION_MODEL` | `claude-sonnet-4-6` | Main agent response generation |
-| Reflection synthesis | `REFLECTION_MODEL` | `claude-sonnet-4-6` | Use Opus for higher quality beliefs |
-| LLM-as-judge | `JUDGE_MODEL` | `claude-opus-4-6` | Evaluation only — keep strong; deterministic (temp=0) |
+| Agent decisions | `DECISION_MODEL` | `claude-haiku-4-5` | Routine decisions — smaller/cheaper model |
+| Reflection synthesis | `REFLECTION_MODEL` | `claude-sonnet-4-6` | Larger model for higher-quality belief synthesis |
+| LLM-as-judge | `JUDGE_MODEL` | `openai/gpt-4o` | Evaluation only — external model; deterministic (temp=0) |
 | Importance scoring | uses `DECISION_MODEL` | — | Short call, same model as decisions |
-| Embeddings | `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | HuggingFace, free, no API key |
+| Embeddings | `EMBEDDING_MODEL` | `text-embedding-3-small` | OpenAI embeddings via API |
 
-The judge model is kept separate from the decision model intentionally — you want a strong, consistent evaluator regardless of what model the agent is using. Judge calls always use `temperature=0` for reproducible scores.
+The judge model is kept separate from agent models intentionally — a consistent, independent evaluator regardless of which model the agent uses. Judge calls always use `temperature=0` for reproducible scores. The default split (large model for reflection, small model for decisions) is the Experiment 2 Variant 1 baseline; swapping both fields to the same model enacts Variants 2 and 3.
 
 ---
 
@@ -188,7 +188,7 @@ The judge model is kept separate from the decision model intentionally — you w
 
 | File | Purpose |
 |------|---------|
-| `src/output/logger.py` | Logs each simulation writing structured JSONL, one JSON object per event. Logs decisions with reasoning, memory additions, reflections, conversations, state snapshots. Each decision log entry contains separate decision and reasoning fields. Decision captures what the agent does (the action). Reasoning captures why (internal logic given personality and memories). This separation enables the LLM judge to score them independently. |
+| `src/output/logger.py` | Logs each simulation writing structured JSONL, one JSON object per event. Each decision log entry **must** contain four fields required for judge calls: `seed_personality` (the agent's full seed paragraph), `intervention` (the exact intervention text delivered, including channel), `decision` (what the agent does), and `reasoning` (why, given personality and memories). Without all four, the judge call cannot be made. Also logs memory additions, reflections, conversations, and state snapshots. |
 | `outputs/runs/` | One .jsonl per run + config copy for reproducibility |
 
 ---
@@ -199,8 +199,64 @@ The judge model is kept separate from the decision model intentionally — you w
 |------|---------|
 | `notebooks/run_simulation.ipynb` | Live simulation runner showing tick-by-tick rendering of agent decisions, new memories, reflections, conversations. Include helper functions such as `inspect_agent()`, `inspect_memory()`, `compare_agents()`, `show_tick_summary()` |
 | `notebooks/prototype.ipynb` | Dev sandbox for initial build to test one agent, one event, one retrieval cycle. Tune retrieval weights interactively. Inspect prompts and raw LLM output. |
-| `notebooks/interview_validation.ipynb` | Compares simulated decisions against held_out_responses. Agreement rate + qualitative disagreement analysis (may use LLM as a judge). |
-| `notebooks/ablation_analysis.ipynb` | Re-runs sim with no-memory, no-reflection, no-social flags to analyse the before/after. |
-| `notebooks/sensitivity_analysis.ipynb` | Varies populations, intervention orderings, social structures. Checks alignment with social science predictions. |
+| `notebooks/ablation_analysis.ipynb` | Experiment 1 (ablation study). Runs 3 variants and scores each with LLM-as-a-judge. |
+| `notebooks/model_comparison.ipynb` | Experiment 2 (model comparison). Runs 3 model configuration variants and scores each with LLM-as-a-judge plus cost/runtime tracking. |
+
+---
+
+## Evaluation Design
+
+### LLM-as-a-Judge
+
+Every time an intervention is executed, the agent produces a decision and its reasoning, logged as a structured JSONL entry. An LLM judge (e.g., GPT-4o, `temperature=0`) scores each entry independently on three dimensions, each on a 1–5 scale (Liu et al., 2023):
+
+| Dimension | Description | 1 | 3 | 5 |
+|---|---|---|---|---|
+| **Behavioral Plausibility** | How plausible is the agent's reasoning for a homeowner in this situation? | Not at all plausible | Reasonable but generic | Reflects nuanced situational understanding |
+| **Persona Consistency** | How closely does the agent's decision align with its seed personality? | Very inconsistent with seed personality | Neutral | Strongly reflects specific traits |
+| **Intervention Responsiveness** | How meaningfully did the agent engage with the intervention? | Did not engage with the event | Engaged broadly but not with the details | Responded meaningfully, integrated event with prior memories and context |
+
+All three dimensions are scored in a **single judge call**. The judge is provided:
+1. The agent's seed personality paragraph
+2. The intervention delivered (text + channel)
+3. The agent's decision and reasoning
+
+The judge produces **chain-of-thought reasoning before each score**. This requires each JSONL decision entry to include `seed_personality`, `intervention`, `decision`, and `reasoning` (see Output Layer above).
+
+---
+
+### Experiment 1: Ablation Study
+
+**Goal:** Determine which components of the agent cognition architecture contribute to behavioral realism, using 3 variants (following Park et al., 2023).
+
+| Variant | Memory stream + retrieval | Reflection | Description |
+|---|---|---|---|
+| **Variant 1** (full) | Yes | Yes | Complete system — memories accumulate with importance scores and embeddings, top-K retrieval, reflections fire when cumulative importance exceeds threshold |
+| **Variant 2** (no reflection) | Yes | No | Agents retrieve memories but never synthesise higher-level beliefs |
+| **Variant 3** (no memory) | No | No | Agents operate from seed personality only; no memory stream, no retrieval, no reflection |
+
+Note: reflection depends on accumulated memories, so removing the memory stream (Variant 3) implicitly removes reflection. Variants are implemented as flags in the simulation loop.
+
+**Constants:** seed personality paragraphs (from interview data), scenario YAML (intervention sequence, timing, channels), agent count, social structure, LLM model, prompt templates, embedding model (`text-embedding-3-small`), retrieval parameters (top-K count).
+
+**Metrics:** LLM-as-a-judge scores (Behavioral Plausibility, Persona Consistency, Intervention Responsiveness) for each agent's decision at each scenario event, averaged across agents and events to compare the three variants.
+
+---
+
+### Experiment 2: Model Comparison
+
+**Goal:** Understand the cost–quality tradeoff between larger and smaller models for agent cognition. Hou et al. (2025) found simulation performance varied substantially across models, motivating a controlled comparison.
+
+| Variant | Reflection model | Decision model | Notes |
+|---|---|---|---|
+| **Variant 1** (baseline) | Larger (e.g., Claude Sonnet 4.6) | Smaller (e.g., Claude Haiku, DeepSeek-R1) | Mixed configuration — larger model for belief synthesis, smaller for routine calls |
+| **Variant 2** | Smaller | Smaller | All calls use the smaller model |
+| **Variant 3** (budget permitting) | Larger | Larger | All calls use the larger model |
+
+Variant 1 is the baseline. Variant 2 tests degradation under a small model only. Variant 3 (if compute budget allows) tests whether upgrading routine decisions to the larger model meaningfully improves quality beyond Variant 1.
+
+**Constants:** Full cognitive architecture (memory, retrieval, reflection), seed personality paragraphs, scenario YAML, agent count, social structure, prompt templates, embedding model (`text-embedding-3-small`), retrieval parameters (top-K count).
+
+**Metrics:** LLM-as-a-judge scores averaged per agent per intervention (quality metric). API cost and runtime (per agent, per tick, across simulation) quantify efficiency. Each agent makes multiple LLM calls per tick, so costs scale quickly across variants.
 
 ---

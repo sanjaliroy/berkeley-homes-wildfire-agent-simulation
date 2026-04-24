@@ -73,42 +73,10 @@ def build_decision_prompt(situation: str, decision_question: str) -> str:
 
 
 # ── Event framing ──────────────────────────────────────────────────────────────
+# Framing logic lives in channels.py — imported here for backwards compatibility
+# so any code that calls prompts.frame_event() still works.
 
-# Channel-specific framing templates.
-# The channel field in the event determines how the raw content is presented to the agent.
-# This keeps channel logic in the prompt layer rather than requiring separate code paths.
-
-CHANNEL_FRAMES = {
-    "official_mail": (
-        "You received an official letter in the mail. It reads:\n\n\"{content}\""
-    ),
-    "news_media": (
-        "You saw the following in a news broadcast / article:\n\n\"{content}\""
-    ),
-    "social": (
-        "Your neighbor mentioned the following in a conversation:\n\n\"{content}\""
-    ),
-    "direct_experience": (
-        "You directly experienced the following:\n\n\"{content}\""
-    ),
-}
-
-DEFAULT_FRAME = "Something happened:\n\n\"{content}\""
-
-
-def frame_event(channel: str, content: str) -> str:
-    """
-    Wrap raw event content in channel-specific framing.
-
-    Args:
-        channel: One of 'official_mail', 'news_media', 'social', 'direct_experience'.
-        content: The raw event text.
-
-    Returns:
-        A framed situation string ready for build_decision_prompt().
-    """
-    template = CHANNEL_FRAMES.get(channel, DEFAULT_FRAME)
-    return template.format(content=content)
+from src.environment.channels import frame_event, CHANNEL_FRAMES  # noqa: F401
 
 
 # ── Standard decision question ─────────────────────────────────────────────────

@@ -362,6 +362,96 @@ def judge_generation(client_anthropic, config: Config, simulated_response: str, 
         }
 
 
+def judge_simulation(
+    client_anthropic,
+    config: "Config",
+    seed_personality: str,
+    intervention: str,
+    decision: str,
+    reasoning: str,
+    client_openrouter=None,
+) -> dict:
+    """
+    LLM-as-a-judge for simulation decisions (Experiments 1 and 2).
+
+    Scores each agent decision on three dimensions (1–5 scale, Liu et al. 2023)
+    in a single call. The judge produces chain-of-thought reasoning before each
+    score so the scoring is interpretable.
+
+    Dimensions:
+      behavioral_plausibility     — is the reasoning plausible for a real homeowner?
+      persona_consistency         — does the decision reflect the seed personality?
+      intervention_responsiveness — did the agent meaningfully engage with the event?
+
+    Args:
+        seed_personality:  The agent's full seed narrative paragraph.
+        intervention:      The raw event content delivered to the agent.
+        decision:          What the agent decided to do.
+        reasoning:         The agent's internal reasoning.
+
+    Returns dict with keys: cot_plausibility, cot_consistency, cot_responsiveness,
+        behavioral_plausibility (1–5), persona_consistency (1–5),
+        intervention_responsiveness (1–5), critique.
+    """
+    system = (
+        "You are an expert evaluator assessing simulated homeowner decisions in a "
+        "wildfire mitigation study. Your role is to score how realistically and "
+        "consistently an AI agent responds to wildfire-related interventions, "
+        "given that agent's seed personality.\n\n"
+        "Be critical and specific. Use the full 1–5 range."
+    )
+    user = (
+        f"AGENT SEED PERSONALITY:\n{seed_personality}\n\n"
+        f"INTERVENTION DELIVERED:\n{intervention}\n\n"
+        f"AGENT DECISION:\n{decision}\n\n"
+        f"AGENT REASONING:\n{reasoning}\n\n"
+        "Score this response on three dimensions (1–5 scale):\n\n"
+        "1. BEHAVIORAL PLAUSIBILITY: How plausible is the reasoning for a real homeowner "
+        "in this situation?\n"
+        "   1=Not at all plausible, 3=Reasonable but generic, "
+        "5=Reflects nuanced situational understanding\n\n"
+        "2. PERSONA CONSISTENCY: How closely does the decision align with the seed personality?\n"
+        "   1=Very inconsistent, 3=Neutral, 5=Strongly reflects specific personality traits\n\n"
+        "3. INTERVENTION RESPONSIVENESS: How meaningfully did the agent engage with the "
+        "intervention?\n"
+        "   1=Did not engage, 3=Engaged broadly but not with specifics, "
+        "5=Integrated event details with prior context and memories\n\n"
+        "Write 1–2 sentences of chain-of-thought for each dimension, then give the score.\n\n"
+        "Respond in this exact JSON format:\n"
+        "{\n"
+        '  "cot_plausibility": "<reasoning>",\n'
+        '  "cot_consistency": "<reasoning>",\n'
+        '  "cot_responsiveness": "<reasoning>",\n'
+        '  "behavioral_plausibility": <1-5>,\n'
+        '  "persona_consistency": <1-5>,\n'
+        '  "intervention_responsiveness": <1-5>,\n'
+        '  "critique": "<1-2 sentence overall assessment>"\n'
+        "}"
+    )
+    raw = _call_llm(
+        model=config.JUDGE_MODEL,
+        system=system,
+        user=user,
+        max_tokens=config.JUDGE_MAX_TOKENS,
+        temperature=config.JUDGE_TEMPERATURE,
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+    )
+    raw = _strip_fences(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "cot_plausibility": None,
+            "cot_consistency": None,
+            "cot_responsiveness": None,
+            "behavioral_plausibility": None,
+            "persona_consistency": None,
+            "intervention_responsiveness": None,
+            "critique": raw,
+        }
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _strip_fences(text: str) -> str:

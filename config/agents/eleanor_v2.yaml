@@ -1,5 +1,5 @@
 agents:
-- id: beth
+- id: eleanor
   display_name: Eleanor
   age: 65+
   occupation: Lawyer
@@ -101,13 +101,13 @@ agents:
       months to finally collect the free metal netting from the Berkeley Fire Department
       due to staff absence.
     importance: 6
-    type: direct_experience
+    type: observation
     source: institutional
   - description: I hired a contractor named Nigel, recommended by neighbors, to install
       metal mesh on gutters and all house vents to prevent ember intrusion, noting
       he may have overcharged.
     importance: 7
-    type: direct_experience
+    type: observation
     source: secondhand_community
   - description: I decided to order new metal gates to replace our wooden ones, having
       learned that wooden gates act as fire bridges from parallel fences to the house.
@@ -127,7 +127,7 @@ agents:
   - description: I recalled evacuating once with my parrot and dog, staying at my
       daughter's house, even though there was no actual fire that time.
     importance: 9
-    type: direct_experience
+    type: observation
     source: direct_experience
   - description: I expressed frustration that city and regional parks refuse to create
       a wide fire break in Wildcat Canyon due to protected plants, while homeowners
