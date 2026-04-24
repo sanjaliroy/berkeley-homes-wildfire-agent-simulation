@@ -1,12 +1,5 @@
 # Project Plan: April 15–30
 
-## Guiding principle
-Write the report as you build — not after. Sections that need no results (Intro, Related Work, Data Sources, Architecture) are written this week alongside development. The Experiments section gets a skeleton with placeholder tables on Day 1, filled in as runs complete. The last few days are dropping in numbers and polishing, not writing from scratch.
-
-**Judge model:** Sonnet at temp=0 is the default judge (cheaper than Opus, consistency matters more than raw capability). Kimi (`moonshotai/kimi-k2` via OpenRouter) is a valid cost-saving swap — one config field change.
-
----
-
 ## Current State
 
 **Built (Stage 1 + Stage 2):**
@@ -203,22 +196,3 @@ Write the remaining sections (all results should be in hand by now):
 | Poster | Day 12–14 (Apr 27–29) | |
 
 ---
-
-## Suggested team contribution split
-
-| Member | Primary notebook | Report sections |
-|---|---|---|
-| Sam | `run_simulation.ipynb` | System Architecture, Experiments (simulation results) |
-| Madeleine | `stage2_validation.ipynb` | Data Sources, agent YAML refinement |
-| Amrita | `ablation_analysis.ipynb` | Experiments (ablation + model comparison), Discussion |
-| All | — | Each contributes to Architecture + Experiments sections |
-
----
-
-## Risk flags
-
-1. **Lola YAML quality** — Lola's generation score is the paper's key validation number. If her held-out responses aren't detailed, scores will look noisy. Prioritize this first.
-2. **Stage 3 scope** — if `simulation.py` takes longer than expected, cut sensitivity analysis and rely on Stage 2 ablations only. Paper is still strong without a full simulation run.
-3. **API costs** — Sonnet-as-judge across 12 ablation conditions × 3 scenarios is manageable; Kimi is cheaper if budget tightens. Run a cost estimate before scaling.
-4. **Beth (test agent)** — do not build or evaluate until all tuning is locked. Use Lola's score as the reported validation result if Beth isn't ready in time.
-5. **Stage 4 (social network)** — `network.py` + `conversation.py` are stretch goals. Attempt only if simulation loop is clean by Apr 22. Not required for a strong paper.
