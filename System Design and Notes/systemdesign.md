@@ -40,6 +40,26 @@
 
 ---
 
+### Note: Role of held_out_responses in evaluation
+
+Each agent YAML contains `held_out_responses` — verbatim quotes from real interview transcripts, each tied to a specific scenario (e.g. `insurance_non_renewal`, `defensible_space_inspection`). These serve different purposes at different stages and must not be conflated:
+
+**Stage 2 (pre-simulation validation):** The primary use. Held-out responses are ground truth for checking whether the agent accurately represents the real person *before* the simulation runs. The stage2_validation notebooks use them to score response fidelity via LLM-as-judge.
+
+**Main simulation evaluation (Stage 3–5):** Held-out responses are *not* appropriate as direct ground truth for intervention responses. By the time a matching event fires (e.g. `insurance_non_renewal` on day 42), the agent has accumulated new memories and may have reflected — so its response will legitimately diverge from the interview quote even if the agent is working correctly. That divergence is the point of the simulation.
+
+**How to use them in simulation evaluation:**
+- **Consistency check:** An agent's response to a matching event should not *contradict* the held-out response, even if it doesn't match it. Contradiction is a failure signal; divergence is expected.
+- **Baseline anchoring:** Compare agent responses at day 0 (before any events) vs. after, using the held-out response as the pre-simulation reference point to measure position shift.
+- **Do not use for direct similarity scoring** in the main simulation — use the LLM-as-judge dimensions (behavioral plausibility, persona consistency, intervention responsiveness) instead.
+
+**Scenario overlaps to be aware of:**
+- Day 42 `insurance_non_renewal` → both Beth and Eleanor have `held_out_responses.insurance_non_renewal`
+- Day 10 `defensible_space_law` → Beth has `held_out_responses.defensible_space_inspection`
+- Day 21 `fire_service_doorknock` (Margaret) → Margaret has `held_out_responses.official_regulatory_notice`
+
+---
+
 ## Detailed System Architecture Outline
 
 ### Architecture Diagram
