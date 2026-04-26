@@ -82,13 +82,13 @@ from src.environment.channels import frame_event, CHANNEL_FRAMES  # noqa: F401
 # ── Standard decision question ─────────────────────────────────────────────────
 
 DECISION_QUESTION = (
-    "Given your personality, memories, and the situation above: "
-    "what do you do in response? "
-    "Describe your immediate reaction, your decision, and your reasoning. "
-    "Be specific — what actions do you take, who do you contact, what do you think? "
-    "Stay in character as yourself."
-)
 
+    """Given your personality, memories, and the situation above:
+    What do you do in response to this situation? 
+    Stay in character. Respond in plain first-person prose as a real homeowner 
+    would speak — no stage directions, no asterisks, no dramatic gestures. 
+    Just describe your thoughts and actions directly."""
+)
 
 # ── Importance scoring prompt ──────────────────────────────────────────────────
 
