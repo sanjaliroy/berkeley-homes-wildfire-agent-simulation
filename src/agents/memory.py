@@ -18,7 +18,7 @@ import numpy as np
 
 
 # ── Memory types ──────────────────────────────────────────────────────────────
-MEMORY_TYPES = {"observation", "decision", "reflection", "conversation"}
+MEMORY_TYPES = {"observation", "decision", "reflection", "conversation", "direct_experience"}
 
 
 @dataclass
