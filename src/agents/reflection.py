@@ -58,6 +58,8 @@ def _generate_questions(
         f"Here are your most recent memories:\n\n{memories_text}\n\n"
         f"Generate exactly {reflection_config.num_questions} insightful questions about yourself "
         "that these memories raise — questions about your beliefs, attitudes, fears, or motivations. "
+        "Each question must be answerable using only the memories listed above. "
+        "Do not ask questions that require experiences or context beyond what is described. "
         "Output ONLY the questions, one per line, no numbering or extra text."
     )
     message = client_anthropic.messages.create(
@@ -96,7 +98,12 @@ def _synthesise_insight(
         f"Question: {question}\n\n"
         f"Relevant memories:\n{memories_text}\n\n"
         "In 1-3 sentences, write a first-person belief or insight that answers this question. "
-        "Be specific. Reference which memories shaped this belief using their Memory # labels."
+        "Be specific. Reference which memories shaped this belief using their Memory # labels.\n\n"
+        # Add to the insights prompt:
+        "IMPORTANT: Only draw insights from the specific memories listed above. "
+        "Do not reference memories by number unless they appear in the list above. "
+        "Do not infer or invent experiences that are not explicitly described. "
+        "If an insight cannot be grounded in the provided memories, do not include it."
     )
     message = client_anthropic.messages.create(
         model=config.REFLECTION_MODEL,
