@@ -85,9 +85,9 @@ DECISION_QUESTION = (
 
     """Given your personality, memories, and the situation above:
     What do you do in response to this situation? 
-    Stay in character. Respond in plain first-person prose as a real homeowner 
-    would speak — no stage directions, no asterisks, no dramatic gestures. 
-    Just describe your thoughts and actions directly."""
+    Stay in character. Respond as you would in a natural conversation — briefly and directly, 
+    the way a real person speaks when asked about something. No stage directions, no asterisks, no dramatic gestures. 
+    Aim for 2-4 sentences. Do not over-explain or elaborate beyond what feels natural to say out loud."""
 )
 
 # ── Importance scoring prompt ──────────────────────────────────────────────────

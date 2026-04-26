@@ -97,12 +97,11 @@ def _synthesise_insight(
     user = (
         f"Question: {question}\n\n"
         f"Relevant memories:\n{memories_text}\n\n"
-        "In 1-3 sentences, write a first-person belief or insight that answers this question. "
-        "Be specific. Reference which memories shaped this belief using their Memory # labels.\n\n"
-        # Add to the insights prompt:
+        "In 1-3 sentences, write a first-person belief or insight that answers this question.\n\n"
         "IMPORTANT: Only draw insights from the specific memories listed above. "
-        "Do not reference memories by number unless they appear in the list above. "
-        "Do not infer or invent experiences that are not explicitly described. "
+        "Do not reference memories by number — instead, describe the experience directly "
+        "(e.g., 'when I saw my neighbor's fence catch fire' not 'Memory #12'). "
+        "Do not infer or invent experiences that are not explicitly described in the list above. "
         "If an insight cannot be grounded in the provided memories, do not include it."
     )
     message = client_anthropic.messages.create(
