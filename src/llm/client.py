@@ -53,8 +53,9 @@ class Config:
     DECISION_TEMPERATURE: float = 0.7
 
     # ── Reflection model (higher reasoning quality; Opus recommended) ─────────
-    REFLECTION_MODEL: str = "claude-sonnet-4-6"
+    REFLECTION_MODEL: str = "claude-haiku-4-5-20251001"
     REFLECTION_MAX_TOKENS: int = 512
+    REFLECTION_QUESTION_MAX_TOKENS: int = 2048
     REFLECTION_TEMPERATURE: float = 0.4
 
     # ── LLM-as-judge model (evaluation only; keep strong + deterministic) ─────
