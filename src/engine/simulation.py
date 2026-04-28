@@ -66,8 +66,6 @@ class SimulationConfig:
     run_label: Optional[str] = None    # human-readable label for eval exports
 
     def __post_init__(self):
-        if self.run_id is None:
-            self.run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         if self.run_label is None:
             # Auto-derive label from flags if not provided
             if self.use_memory and self.use_reflection:
@@ -76,6 +74,8 @@ class SimulationConfig:
                 self.run_label = "No_Reflection"
             else:
                 self.run_label = "No_Memory_No_Retrieval_No_Reflection"
+        if self.run_id is None:
+            self.run_id = f"{self.run_label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     def describe(self) -> str:
         """Human-readable summary for notebook display."""

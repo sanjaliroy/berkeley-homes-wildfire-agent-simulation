@@ -100,7 +100,8 @@ def test_run_id_auto_generated():
         agent_yaml_paths=[],
     )
     assert cfg.run_id is not None
-    assert len(cfg.run_id) == 15  # YYYYMMDD_HHMMSS
+    assert cfg.run_label in cfg.run_id
+    assert len(cfg.run_id) > 15  # label + _ + YYYYMMDD_HHMMSS
 
 
 def test_run_label_auto_full():
