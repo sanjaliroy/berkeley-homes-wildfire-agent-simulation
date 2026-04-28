@@ -32,12 +32,12 @@ from typing import List
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # ── Model pricing (USD per million tokens) ─────────────────────────────────────
-# Verify Claude rates against current Anthropic pricing before use.
+# Source: https://docs.anthropic.com/en/docs/about-claude/models/overview (verified Apr 2026)
 MODEL_PRICING = {
     "moonshotai/kimi-k2.6":        (0.7448, 4.655),
     "claude-sonnet-4-6":           (3.00,   15.00),
-    "claude-opus-4-6":             (15.00,  75.00),
-    "claude-haiku-4-5-20251001":   (0.80,   4.00),
+    "claude-opus-4-6":             (5.00,   25.00),
+    "claude-haiku-4-5-20251001":   (1.00,    5.00),
 }
 
 
