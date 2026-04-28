@@ -38,10 +38,14 @@ class SimulationConfig:
     should point to a YAML file with id, display_name, seed_narrative, and
     memory_seeds fields (same format as beth.yaml / eleanor_v2.yaml).
 
-    Ablation flags (Experiment 1):
-        use_memory=True, use_reflection=True   → Variant 1 (full system)
-        use_memory=True, use_reflection=False  → Variant 2 (no reflection)
-        use_memory=False, use_reflection=False → Variant 3 (seed personality only)
+    Ablation variants (Experiment 1):
+        Variant 1: use_memory=True,  use_reflection=True  — Full system
+        Variant 2: use_memory=True,  use_reflection=False — Memory + retrieval, no reflection
+        Variant 3: use_memory=False, use_reflection=False — Seed personality only (no memory, retrieval, or reflection)
+
+    run_label is the human-readable name used in evaluation exports, e.g.:
+        "Premium_Full", "Baseline_Full", "Baseline_No_Reflection",
+        "Baseline_No_Memory_No_Retrieval_No_Reflection"
     """
 
     scenario_path: str                         # path to scenario YAML
@@ -58,26 +62,38 @@ class SimulationConfig:
 
     # Output
     output_dir: str = "outputs/runs"
-    run_id: Optional[str] = None    # auto-generated from timestamp if not set
+    run_id: Optional[str] = None       # auto-generated from timestamp if not set
+    run_label: Optional[str] = None    # human-readable label for eval exports
 
     def __post_init__(self):
         if self.run_id is None:
             self.run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if self.run_label is None:
+            # Auto-derive label from flags if not provided
+            if self.use_memory and self.use_reflection:
+                self.run_label = "Full"
+            elif self.use_memory:
+                self.run_label = "No_Reflection"
+            else:
+                self.run_label = "No_Memory_No_Retrieval_No_Reflection"
 
     def describe(self) -> str:
         """Human-readable summary for notebook display."""
-        variant = (
-            "Variant 1 (full)" if self.use_memory and self.use_reflection
-            else "Variant 2 (no reflection)" if self.use_memory
-            else "Variant 3 (no memory)"
-        )
+        if self.use_memory and self.use_reflection:
+            variant = "Variant 1 — Full system (memory + retrieval + reflection)"
+        elif self.use_memory:
+            variant = "Variant 2 — Memory + retrieval, no reflection"
+        else:
+            variant = "Variant 3 — Seed personality only (no memory, no retrieval, no reflection)"
         return (
-            f"Run ID:  {self.run_id}\n"
-            f"Agents:  {[p.split('/')[-1] for p in self.agent_yaml_paths]}\n"
-            f"Scenario: {self.scenario_path.split('/')[-1]}\n"
-            f"Ablation: {variant}\n"
-            f"Decision model: {self.llm_config.DECISION_MODEL}\n"
-            f"Reflection model: {self.llm_config.REFLECTION_MODEL}"
+            f"Run ID:    {self.run_id}\n"
+            f"Run label: {self.run_label}\n"
+            f"Agents:    {[p.split('/')[-1] for p in self.agent_yaml_paths]}\n"
+            f"Scenario:  {self.scenario_path.split('/')[-1]}\n"
+            f"Ablation:  {variant}\n"
+            f"Decision model:   {self.llm_config.DECISION_MODEL}\n"
+            f"Reflection model: {self.llm_config.REFLECTION_MODEL}\n"
+            f"Concise output:   {self.llm_config.CONCISE_OUTPUT}"
         )
 
 
@@ -136,12 +152,14 @@ class Simulation:
         )
         # Log the run configuration as the first JSONL entry for reproducibility
         self.logger.log_run_config({
-            "scenario_path": sim_config.scenario_path,
-            "agents": list(self.agents.keys()),
-            "use_memory": sim_config.use_memory,
-            "use_reflection": sim_config.use_reflection,
-            "decision_model": sim_config.llm_config.DECISION_MODEL,
+            "run_label":       sim_config.run_label,
+            "scenario_path":   sim_config.scenario_path,
+            "agents":          list(self.agents.keys()),
+            "use_memory":      sim_config.use_memory,
+            "use_reflection":  sim_config.use_reflection,
+            "decision_model":  sim_config.llm_config.DECISION_MODEL,
             "reflection_model": sim_config.llm_config.REFLECTION_MODEL,
+            "concise_output":  sim_config.llm_config.CONCISE_OUTPUT,
         })
 
         # Runtime state

@@ -22,12 +22,23 @@ Embedding model: all-MiniLM-L6-v2 (HuggingFace, free, no API key needed).
 """
 
 import os
+import time
 import json
 import anthropic
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+# ── Model pricing (USD per million tokens) ─────────────────────────────────────
+# Verify Claude rates against current Anthropic pricing before use.
+MODEL_PRICING = {
+    "moonshotai/kimi-k2.6":        (0.7448, 4.655),
+    "claude-sonnet-4-6":           (3.00,   15.00),
+    "claude-opus-4-6":             (15.00,  75.00),
+    "claude-haiku-4-5-20251001":   (0.80,   4.00),
+}
 
 
 # ── Config ─────────────────────────────────────────────────────────────────────
@@ -36,7 +47,7 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 class Config:
     # ── Agent decision model ──────────────────────────────────────────────────
     # Anthropic:   "claude-sonnet-4-6", "claude-haiku-4-5-20251001"
-    # OpenRouter:  "openai/gpt-4o", "deepseek/deepseek-r1", "meta-llama/llama-3.3-70b-instruct"
+    # OpenRouter:  "moonshotai/kimi-k2.6", "openai/gpt-4o", "deepseek/deepseek-r1"
     DECISION_MODEL: str = "claude-sonnet-4-6"
     DECISION_MAX_TOKENS: int = 1024
     DECISION_TEMPERATURE: float = 0.7
@@ -47,7 +58,7 @@ class Config:
     REFLECTION_TEMPERATURE: float = 0.4
 
     # ── LLM-as-judge model (evaluation only; keep strong + deterministic) ─────
-    JUDGE_MODEL: str = "claude-sonnet-4-6"
+    JUDGE_MODEL: str = "claude-opus-4-6"
     JUDGE_MAX_TOKENS: int = 1024
     JUDGE_TEMPERATURE: float = 0.0   # deterministic → reproducible eval scores
 
@@ -59,8 +70,68 @@ class Config:
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     EMBEDDING_DIM: int = 384
 
+    # ── Output verbosity ──────────────────────────────────────────────────────
+    # When True, injects a conciseness instruction into every decide() call.
+    # Set to True for evaluation runs to keep logged decision/reasoning readable.
+    CONCISE_OUTPUT: bool = False
+
 
 config = Config()
+
+
+# ── Usage tracking ─────────────────────────────────────────────────────────────
+
+@dataclass
+class UsageTracker:
+    """
+    Accumulates token counts across all LLM calls in a run.
+
+    Reset at the start of each simulation run, then read at the end to
+    produce the cost summary logged to the JSONL and exported to Excel.
+
+    Agent calls: decide(), reflect(), score_importance()
+    Judge calls: judge_simulation(), judge_full_simulation()
+    """
+    agent_tokens_in:  int = 0
+    agent_tokens_out: int = 0
+    judge_tokens_in:  int = 0
+    judge_tokens_out: int = 0
+
+    def reset(self):
+        self.agent_tokens_in  = 0
+        self.agent_tokens_out = 0
+        self.judge_tokens_in  = 0
+        self.judge_tokens_out = 0
+
+    def add(self, call_type: str, tokens_in: int, tokens_out: int):
+        if call_type == "agent":
+            self.agent_tokens_in  += tokens_in
+            self.agent_tokens_out += tokens_out
+        elif call_type == "judge":
+            self.judge_tokens_in  += tokens_in
+            self.judge_tokens_out += tokens_out
+
+    def _cost(self, model: str, tokens_in: int, tokens_out: int) -> float:
+        in_rate, out_rate = MODEL_PRICING.get(model, (0.0, 0.0))
+        return (tokens_in * in_rate + tokens_out * out_rate) / 1_000_000
+
+    def to_dict(self, agent_model: str, judge_model: str = "claude-opus-4-6") -> dict:
+        agent_cost = self._cost(agent_model, self.agent_tokens_in, self.agent_tokens_out)
+        judge_cost = self._cost(judge_model, self.judge_tokens_in, self.judge_tokens_out)
+        return {
+            "agent_model":      agent_model,
+            "agent_tokens_in":  self.agent_tokens_in,
+            "agent_tokens_out": self.agent_tokens_out,
+            "agent_cost_usd":   round(agent_cost, 6),
+            "judge_tokens_in":  self.judge_tokens_in,
+            "judge_tokens_out": self.judge_tokens_out,
+            "judge_cost_usd":   round(judge_cost, 6),
+            "total_cost_usd":   round(agent_cost + judge_cost, 6),
+        }
+
+
+# Module-level tracker — reset before each run, read after
+usage_tracker = UsageTracker()
 
 _embedding_model = None
 
@@ -139,6 +210,7 @@ def _call_llm(
     temperature: float,
     client_anthropic,
     client_openrouter=None,
+    call_type: str = "agent",   # "agent" | "judge" — controls usage_tracker bucket
 ) -> str:
     """
     Internal routing function. All LLM calls go through here.
@@ -147,6 +219,9 @@ def _call_llm(
     Handles the API format difference between providers transparently:
       - Anthropic: system is a separate top-level param
       - OpenRouter: system is a message with role="system"
+
+    Also records token usage in the module-level usage_tracker.
+    call_type="agent" for decisions/reflection/importance; "judge" for judge calls.
     """
     if _is_anthropic_model(model):
         message = client_anthropic.messages.create(
@@ -156,6 +231,7 @@ def _call_llm(
             system=system,
             messages=[{"role": "user", "content": user}],
         )
+        usage_tracker.add(call_type, message.usage.input_tokens, message.usage.output_tokens)
         return message.content[0].text
 
     else:
@@ -173,6 +249,8 @@ def _call_llm(
                 {"role": "user",   "content": user},
             ],
         )
+        u = response.usage
+        usage_tracker.add(call_type, u.prompt_tokens, u.completion_tokens)
         return response.choices[0].message.content
 
 
@@ -198,11 +276,20 @@ def embed(text: str) -> np.ndarray:
 
 # ── Agent calls ────────────────────────────────────────────────────────────────
 
+_CONCISE_SUFFIX = (
+    "\n\nIMPORTANT: Keep both the decision and reasoning fields concise "
+    "— 1-2 sentences each. No padding or elaboration."
+)
+
+
 def decide(client_anthropic, system_prompt: str, user_prompt: str, client_openrouter=None) -> str:
     """
     Routine agent decision call.
     Uses config.DECISION_MODEL — swap this in Config to change the agent's LLM.
+    When config.CONCISE_OUTPUT is True, injects a brevity instruction into the prompt.
     """
+    if config.CONCISE_OUTPUT:
+        user_prompt = user_prompt + _CONCISE_SUFFIX
     return _call_llm(
         model=config.DECISION_MODEL,
         system=system_prompt,
@@ -211,6 +298,7 @@ def decide(client_anthropic, system_prompt: str, user_prompt: str, client_openro
         temperature=config.DECISION_TEMPERATURE,
         client_anthropic=client_anthropic,
         client_openrouter=client_openrouter,
+        call_type="agent",
     )
 
 
@@ -233,6 +321,7 @@ def reflect(client_anthropic, system_prompt: str, memories_text: str, client_ope
         temperature=config.REFLECTION_TEMPERATURE,
         client_anthropic=client_anthropic,
         client_openrouter=client_openrouter,
+        call_type="agent",
     )
 
 
@@ -259,6 +348,7 @@ def score_importance(client_anthropic, description: str, agent_seed: str, max_re
             temperature=config.IMPORTANCE_TEMPERATURE,
             client_anthropic=client_anthropic,
             client_openrouter=client_openrouter,
+            call_type="agent",
         )
         try:
             return max(1, min(10, int(raw.strip())))
@@ -310,6 +400,7 @@ def judge_retrieval(client_anthropic, config: Config, all_memories, intervention
         temperature=config.JUDGE_TEMPERATURE,
         client_anthropic=client_anthropic,
         client_openrouter=client_openrouter,
+        call_type="judge",
     )
     raw = _strip_fences(raw)
     try:
@@ -351,6 +442,7 @@ def judge_generation(client_anthropic, config: Config, simulated_response: str, 
         temperature=config.JUDGE_TEMPERATURE,
         client_anthropic=client_anthropic,
         client_openrouter=client_openrouter,
+        call_type="judge",
     )
     raw = _strip_fences(raw)
     try:
@@ -362,70 +454,69 @@ def judge_generation(client_anthropic, config: Config, simulated_response: str, 
         }
 
 
-def judge_simulation(
+def _format_memory_seeds(memory_seeds: list) -> str:
+    """Format memory seeds as a compact numbered list for judge context."""
+    if not memory_seeds:
+        return "(none)"
+    return "\n".join(
+        f"[{i+1}] {s['description'].strip()}"
+        for i, s in enumerate(memory_seeds)
+    )
+
+
+def judge_intervention(
     client_anthropic,
     config: "Config",
-    seed_personality: str,
+    seed_narrative: str,
+    memory_seeds: list,
     intervention: str,
     decision: str,
     reasoning: str,
     client_openrouter=None,
 ) -> dict:
     """
-    LLM-as-a-judge for simulation decisions (Experiments 1 and 2).
+    LLM-as-judge for a single agent intervention response.
 
-    Scores each agent decision on three dimensions (1–5 scale, Liu et al. 2023)
-    in a single call. The judge produces chain-of-thought reasoning before each
-    score so the scoring is interpretable.
+    Scores on three 1–5 dimensions (Park et al. 2023 / Liu et al. 2023).
+    Judge receives the full seed_narrative AND memory seeds — matching the level
+    of context that Park et al.'s human raters had when inspecting memory streams.
 
-    Dimensions:
-      behavioral_plausibility     — is the reasoning plausible for a real homeowner?
-      persona_consistency         — does the decision reflect the seed personality?
-      intervention_responsiveness — did the agent meaningfully engage with the event?
-
-    Args:
-        seed_personality:  The agent's full seed narrative paragraph.
-        intervention:      The raw event content delivered to the agent.
-        decision:          What the agent decided to do.
-        reasoning:         The agent's internal reasoning.
-
-    Returns dict with keys: cot_plausibility, cot_consistency, cot_responsiveness,
-        behavioral_plausibility (1–5), persona_consistency (1–5),
-        intervention_responsiveness (1–5), critique.
+    Returns dict with per-criterion scores and 1–2 sentence notes explaining each.
     """
+    seeds_text = _format_memory_seeds(memory_seeds)
+
     system = (
         "You are an expert evaluator assessing simulated homeowner decisions in a "
-        "wildfire mitigation study. Your role is to score how realistically and "
-        "consistently an AI agent responds to wildfire-related interventions, "
-        "given that agent's seed personality.\n\n"
+        "wildfire mitigation study. Score how realistically and consistently the agent "
+        "responds given their personality and background.\n\n"
         "Be critical and specific. Use the full 1–5 range."
     )
     user = (
-        f"AGENT SEED PERSONALITY:\n{seed_personality}\n\n"
+        f"AGENT SEED NARRATIVE:\n{seed_narrative}\n\n"
+        f"AGENT MEMORY SEEDS (background experiences):\n{seeds_text}\n\n"
         f"INTERVENTION DELIVERED:\n{intervention}\n\n"
         f"AGENT DECISION:\n{decision}\n\n"
         f"AGENT REASONING:\n{reasoning}\n\n"
         "Score this response on three dimensions (1–5 scale):\n\n"
-        "1. BEHAVIORAL PLAUSIBILITY: How plausible is the reasoning for a real homeowner "
-        "in this situation?\n"
-        "   1=Not at all plausible, 3=Reasonable but generic, "
+        "1. BEHAVIORAL PLAUSIBILITY — How plausible is the reasoning for a real homeowner?\n"
+        "   1=Not at all plausible | 3=Reasonable but generic | "
         "5=Reflects nuanced situational understanding\n\n"
-        "2. PERSONA CONSISTENCY: How closely does the decision align with the seed personality?\n"
-        "   1=Very inconsistent, 3=Neutral, 5=Strongly reflects specific personality traits\n\n"
-        "3. INTERVENTION RESPONSIVENESS: How meaningfully did the agent engage with the "
-        "intervention?\n"
-        "   1=Did not engage, 3=Engaged broadly but not with specifics, "
-        "5=Integrated event details with prior context and memories\n\n"
-        "Write 1–2 sentences of chain-of-thought for each dimension, then give the score.\n\n"
+        "2. PERSONA CONSISTENCY — How closely does the decision reflect the seed personality "
+        "and memory background?\n"
+        "   1=Very inconsistent | 3=Neutral | 5=Strongly reflects specific traits and experiences\n\n"
+        "3. INTERVENTION RESPONSIVENESS — How meaningfully did the agent engage with the event?\n"
+        "   1=Did not engage | 3=Engaged broadly but not with specifics | "
+        "5=Integrated event details with prior context\n\n"
+        "For each dimension write a concise 1–2 sentence note explaining your score, "
+        "then give the integer score.\n\n"
         "Respond in this exact JSON format:\n"
         "{\n"
-        '  "cot_plausibility": "<reasoning>",\n'
-        '  "cot_consistency": "<reasoning>",\n'
-        '  "cot_responsiveness": "<reasoning>",\n'
-        '  "behavioral_plausibility": <1-5>,\n'
-        '  "persona_consistency": <1-5>,\n'
-        '  "intervention_responsiveness": <1-5>,\n'
-        '  "critique": "<1-2 sentence overall assessment>"\n'
+        '  "note_plausibility": "<1-2 sentence explanation>",\n'
+        '  "behavioral_plausibility": <integer 1-5>,\n'
+        '  "note_consistency": "<1-2 sentence explanation>",\n'
+        '  "persona_consistency": <integer 1-5>,\n'
+        '  "note_responsiveness": "<1-2 sentence explanation>",\n'
+        '  "intervention_responsiveness": <integer 1-5>\n'
         "}"
     )
     raw = _call_llm(
@@ -436,20 +527,137 @@ def judge_simulation(
         temperature=config.JUDGE_TEMPERATURE,
         client_anthropic=client_anthropic,
         client_openrouter=client_openrouter,
+        call_type="judge",
     )
     raw = _strip_fences(raw)
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
         return {
-            "cot_plausibility": None,
-            "cot_consistency": None,
-            "cot_responsiveness": None,
-            "behavioral_plausibility": None,
-            "persona_consistency": None,
-            "intervention_responsiveness": None,
-            "critique": raw,
+            "note_plausibility": None, "behavioral_plausibility": None,
+            "note_consistency": None,  "persona_consistency": None,
+            "note_responsiveness": None, "intervention_responsiveness": None,
+            "_raw": raw,
         }
+
+
+def judge_full_simulation(
+    client_anthropic,
+    config: "Config",
+    seed_narrative: str,
+    memory_seeds: list,
+    all_decisions: list,
+    client_openrouter=None,
+) -> dict:
+    """
+    Holistic LLM-as-judge for a complete agent simulation trajectory.
+
+    Unlike judge_intervention() which scores one event at a time, this function
+    receives the full sequence of all interventions and responses and gives a
+    single holistic score for each criterion — capturing trajectory-level
+    patterns that per-event scoring cannot.
+
+    Args:
+        all_decisions: list of dicts with keys:
+            day, event_type, intervention, decision, reasoning
+
+    Returns dict with same structure as judge_intervention().
+    """
+    seeds_text = _format_memory_seeds(memory_seeds)
+
+    trajectory = "\n\n".join(
+        f"--- Day {d['day']}: {d['event_type'].upper()} ---\n"
+        f"INTERVENTION: {d['intervention']}\n"
+        f"AGENT DECISION: {d['decision']}\n"
+        f"AGENT REASONING: {d['reasoning']}"
+        for d in all_decisions
+    )
+
+    system = (
+        "You are an expert evaluator assessing a simulated homeowner's behaviour "
+        "across a full wildfire mitigation simulation. You will see the agent's complete "
+        "trajectory — all interventions they received and how they responded — and give "
+        "a single holistic score for each criterion.\n\n"
+        "This is NOT an average of per-event scores. Assess overall trajectory-level "
+        "patterns: consistency across events, cumulative plausibility, and whether the "
+        "agent engaged meaningfully with the simulation as a whole.\n\n"
+        "Be critical and specific. Use the full 1–5 range."
+    )
+    user = (
+        f"AGENT SEED NARRATIVE:\n{seed_narrative}\n\n"
+        f"AGENT MEMORY SEEDS (background experiences):\n{seeds_text}\n\n"
+        f"FULL SIMULATION TRAJECTORY ({len(all_decisions)} interventions):\n{trajectory}\n\n"
+        "Holistically score this agent's performance across the full simulation:\n\n"
+        "1. BEHAVIORAL PLAUSIBILITY — Overall, how plausible was the agent's behaviour "
+        "across all interventions?\n"
+        "   1=Not at all plausible | 3=Reasonable but generic | "
+        "5=Consistently reflects nuanced situational understanding\n\n"
+        "2. PERSONA CONSISTENCY — How consistently did the agent stay in character across "
+        "all interventions?\n"
+        "   1=Very inconsistent | 3=Neutral | 5=Strongly and consistently reflects "
+        "specific traits and experiences throughout\n\n"
+        "3. INTERVENTION RESPONSIVENESS — How meaningfully did the agent engage with "
+        "interventions overall?\n"
+        "   1=Rarely engaged | 3=Engaged broadly | "
+        "5=Consistently integrated event details with prior context\n\n"
+        "For each dimension write a concise 1–2 sentence note, then give the integer score.\n\n"
+        "Respond in this exact JSON format:\n"
+        "{\n"
+        '  "note_plausibility": "<1-2 sentence explanation>",\n'
+        '  "behavioral_plausibility": <integer 1-5>,\n'
+        '  "note_consistency": "<1-2 sentence explanation>",\n'
+        '  "persona_consistency": <integer 1-5>,\n'
+        '  "note_responsiveness": "<1-2 sentence explanation>",\n'
+        '  "intervention_responsiveness": <integer 1-5>\n'
+        "}"
+    )
+    raw = _call_llm(
+        model=config.JUDGE_MODEL,
+        system=system,
+        user=user,
+        max_tokens=config.JUDGE_MAX_TOKENS,
+        temperature=config.JUDGE_TEMPERATURE,
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="judge",
+    )
+    raw = _strip_fences(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "note_plausibility": None, "behavioral_plausibility": None,
+            "note_consistency": None,  "persona_consistency": None,
+            "note_responsiveness": None, "intervention_responsiveness": None,
+            "_raw": raw,
+        }
+
+
+# Keep old judge_simulation as an alias for backwards compatibility with Stage 2 notebooks
+def judge_simulation(
+    client_anthropic,
+    config: "Config",
+    seed_personality: str,
+    intervention: str,
+    decision: str,
+    reasoning: str,
+    client_openrouter=None,
+    memory_seeds: list = None,
+) -> dict:
+    """
+    Legacy per-intervention judge. New code should use judge_intervention().
+    Kept for backwards compatibility with stage2_validation_beth_v2.ipynb.
+    """
+    return judge_intervention(
+        client_anthropic=client_anthropic,
+        config=config,
+        seed_narrative=seed_personality,
+        memory_seeds=memory_seeds or [],
+        intervention=intervention,
+        decision=decision,
+        reasoning=reasoning,
+        client_openrouter=client_openrouter,
+    )
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────

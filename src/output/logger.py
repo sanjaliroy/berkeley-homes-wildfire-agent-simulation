@@ -145,6 +145,21 @@ class SimulationLogger:
         }
         self._write(entry)
 
+    def log_run_summary(self, latency_seconds: float, cost_info: dict):
+        """
+        Log end-of-run cost and latency as the final JSONL entry.
+
+        latency_seconds: wall-clock time for the full simulation run.
+        cost_info: dict from UsageTracker.to_dict() — agent/judge token counts and costs.
+        """
+        entry = {
+            "entry_type": "run_summary",
+            "tick": -2,
+            "latency_seconds": round(latency_seconds, 2),
+            **cost_info,
+        }
+        self._write(entry)
+
     # ── Internal write ─────────────────────────────────────────────────────────
 
     def _write(self, entry: dict):
