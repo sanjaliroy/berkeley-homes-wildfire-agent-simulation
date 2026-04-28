@@ -682,6 +682,254 @@ def judge_full_simulation(
         }
 
 
+# ── Judge v2 — 1-10 scale, evidence-anchored, seed-narrative only ─────────────
+
+def judge_intervention_v2(
+    client_anthropic,
+    config: "Config",
+    seed_narrative: str,
+    memory_seeds: list,   # accepted but intentionally not passed to the judge
+    intervention: str,
+    decision: str,
+    reasoning: str,
+    client_openrouter=None,
+) -> dict:
+    """
+    Updated LLM-as-judge for a single agent intervention response.
+
+    Changes from v1:
+    - 1-10 integer scale (no half-points)
+    - Seed narrative only — memory_seeds are NOT passed to the judge, so the
+      judge's context matches what the No_Memory agent actually had
+    - Evidence-anchored rubric bands with explicit failure-mode warnings
+    - Calibration instruction centred at 5-6 (not 3-4)
+    """
+    system = (
+        "You are an expert evaluator assessing how faithfully a simulated agent "
+        "represents how a real person with this background would actually respond "
+        "to wildfire mitigation interventions.\n\n"
+        "Your task: assess whether the agent's decision and reasoning reflect how "
+        "THIS specific person would plausibly think and act — given their role, "
+        "constraints, values, and relationship to the issue. Read the seed narrative "
+        "carefully before scoring.\n\n"
+        "LLM-simulated agents have a known bias toward social desirability: they "
+        "comply more readily, cooperate more smoothly, and sound more reasonable "
+        "than real people in the same situation. Be alert for this. A response that "
+        "feels like an ideal citizen rather than this specific person is a failure "
+        "of simulation fidelity even if the reasoning is coherent.\n\n"
+        "Calibration: score 5-6 for responses that are plausible and appropriate "
+        "but generic — fitting this person without obvious contradictions, but not "
+        "distinctively grounded in their specific circumstances. Score 7+ only when "
+        "you can point to specific evidence in the response that reflects this "
+        "person's particular situation. Reserve 9-10 for responses that are clearly "
+        "and distinctively grounded in who this person is."
+    )
+    user = (
+        f"AGENT SEED NARRATIVE:\n{seed_narrative}\n\n"
+        f"INTERVENTION DELIVERED:\n{intervention}\n\n"
+        f"AGENT DECISION:\n{decision}\n\n"
+        f"AGENT REASONING:\n{reasoning}\n\n"
+        "For each dimension below, write a concise 1-2 sentence note citing specific "
+        "evidence from the response, then give an integer score 1-10. "
+        "If you cannot point to specific evidence, do not score above 6.\n\n"
+        "1. BEHAVIORAL PLAUSIBILITY — Would a real person with this background "
+        "actually reason and act this way, given who they are and what they face?\n"
+        "   1-2 = Contradicts this person's actual situation — they do or say "
+        "something their role, finances, or constraints make implausible\n"
+        "   3-4 = Generic plausibility — a reasonable person in a broadly similar "
+        "situation would respond this way, but nothing specific to this person's "
+        "circumstances drives it\n"
+        "   5-6 = Fits this person without obvious contradictions, but the specific "
+        "frictions, tensions, or trade-offs they face don't visibly shape the decision\n"
+        "   7-8 = This person's actual constraints or worldview are visibly shaping "
+        "the response — you can point to what in the seed explains the specific "
+        "decision made\n"
+        "   9-10 = Reflects a tension or trade-off unique to this person that a "
+        "generic stand-in couldn't produce\n"
+        "   Watch for: social desirability bias (agent cooperates more smoothly than "
+        "this person's background would predict) and trait neutralisation (agent with "
+        "a distinctive worldview responds like an average person)\n\n"
+        "2. PERSONA CONSISTENCY — Does this sound like this specific person, "
+        "or like anyone?\n"
+        "   1-2 = Contradicts the seed — tone, values, or decision explicitly "
+        "opposite to who this person is\n"
+        "   3-4 = Consistent with the general type of person described but nothing "
+        "distinguishes THIS person from others of the same broad type\n"
+        "   5-6 = Reads as this person without obvious inconsistencies, but their "
+        "specific voice, characteristic framing, or individual opinions don't surface\n"
+        "   7-8 = Something specific to this person's voice or perspective comes "
+        "through — their characteristic way of framing things or particular attitude\n"
+        "   9-10 = Could only have come from this person — distinctive enough that "
+        "you could identify the agent from the response alone\n"
+        "   Watch for: trait neutralisation (agent with a distinctive worldview "
+        "responds like a cooperative homeowner) and prompt-to-line inconsistency "
+        "(response contradicts a key trait from the seed)\n\n"
+        "3. INTERVENTION RESPONSIVENESS — Did the agent actually engage with "
+        "what was said?\n"
+        "   1-2 = Ignored the specific content — gave a generic response about "
+        "their situation\n"
+        "   3-4 = Acknowledged the event type but not the details — any broadly "
+        "similar intervention would produce the same response\n"
+        "   5-6 = Engaged with the main thrust but missed specific elements "
+        "(particular deadlines, amounts, requirements, or channels)\n"
+        "   7-8 = Engaged with specific details of this intervention in a way that "
+        "shows genuine processing\n"
+        "   9-10 = Integrated specific details with prior context in a way that "
+        "shows the agent understood exactly what was communicated\n\n"
+        "Respond in this exact JSON format:\n"
+        "{\n"
+        '  "note_plausibility": "<1-2 sentence note citing specific evidence>",\n'
+        '  "behavioral_plausibility": <integer 1-10>,\n'
+        '  "note_consistency": "<1-2 sentence note citing specific evidence>",\n'
+        '  "persona_consistency": <integer 1-10>,\n'
+        '  "note_responsiveness": "<1-2 sentence note citing specific evidence>",\n'
+        '  "intervention_responsiveness": <integer 1-10>\n'
+        "}"
+    )
+    raw = _call_llm(
+        model=config.JUDGE_MODEL,
+        system=system,
+        user=user,
+        max_tokens=config.JUDGE_MAX_TOKENS,
+        temperature=config.JUDGE_TEMPERATURE,
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="judge",
+    )
+    raw = _strip_fences(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "note_plausibility": None, "behavioral_plausibility": None,
+            "note_consistency": None,  "persona_consistency": None,
+            "note_responsiveness": None, "intervention_responsiveness": None,
+            "_raw": raw,
+        }
+
+
+def judge_full_simulation_v2(
+    client_anthropic,
+    config: "Config",
+    seed_narrative: str,
+    memory_seeds: list,   # accepted but intentionally not passed to the judge
+    all_decisions: list,
+    client_openrouter=None,
+) -> dict:
+    """
+    Updated holistic LLM-as-judge for a complete agent simulation trajectory.
+
+    Same changes as judge_intervention_v2: 1-10 scale, seed-narrative only,
+    evidence-anchored rubric, calibration centred at 5-6.
+    """
+    trajectory = "\n\n".join(
+        f"--- Day {d['day']}: {d['event_type'].upper()} ---\n"
+        f"INTERVENTION: {d['intervention']}\n"
+        f"AGENT DECISION: {d['decision']}\n"
+        f"AGENT REASONING: {d['reasoning']}"
+        for d in all_decisions
+    )
+
+    system = (
+        "You are an expert evaluator assessing how faithfully a simulated agent "
+        "represents how a real person with this background would actually behave "
+        "across a full wildfire mitigation simulation.\n\n"
+        "You will see the agent's complete trajectory — all interventions received "
+        "and how they responded — and give a single holistic score for each criterion. "
+        "This is NOT an average of per-event scores: assess overall trajectory-level "
+        "patterns, consistency across events, and cumulative plausibility.\n\n"
+        "LLM-simulated agents have a known bias toward social desirability: they "
+        "comply more readily, cooperate more smoothly, and sound more reasonable "
+        "than real people in the same situation. Be alert for this across the full "
+        "trajectory — consistent over-cooperation or smoothness is itself a signal "
+        "of simulation failure.\n\n"
+        "Calibration: score 5-6 for trajectories that are plausible and appropriate "
+        "but generic. Score 7+ only when you can point to specific evidence across "
+        "the trajectory that reflects this person's particular situation. Reserve "
+        "9-10 for trajectories that are clearly and distinctively grounded in who "
+        "this person is throughout."
+    )
+    user = (
+        f"AGENT SEED NARRATIVE:\n{seed_narrative}\n\n"
+        f"FULL SIMULATION TRAJECTORY ({len(all_decisions)} interventions):\n{trajectory}\n\n"
+        "For each dimension below, write a concise 1-2 sentence note citing specific "
+        "evidence from the trajectory, then give an integer score 1-10. "
+        "If you cannot point to specific evidence, do not score above 6.\n\n"
+        "1. BEHAVIORAL PLAUSIBILITY — Overall, would a real person with this "
+        "background actually reason and behave this way across the simulation?\n"
+        "   1-2 = Behaviour contradicts this person's actual situation across "
+        "multiple events\n"
+        "   3-4 = Generic plausibility across events — a reasonable person in a "
+        "broadly similar situation would behave this way, but nothing specific to "
+        "this person's circumstances drives it\n"
+        "   5-6 = Fits this person without obvious contradictions across events, "
+        "but the specific frictions, tensions, or trade-offs they face don't "
+        "visibly shape responses\n"
+        "   7-8 = This person's actual constraints or worldview are consistently "
+        "shaping responses — you can point to the seed to explain the specific "
+        "decisions made\n"
+        "   9-10 = The trajectory reflects tensions or trade-offs unique to this "
+        "person that a generic stand-in couldn't produce\n"
+        "   Watch for: social desirability bias (consistent over-cooperation across "
+        "events) and trait neutralisation (distinctive persona consistently responds "
+        "like an average person)\n\n"
+        "2. PERSONA CONSISTENCY — Does this trajectory sound like this specific "
+        "person throughout, or like anyone?\n"
+        "   1-2 = Contradicts the seed personality across multiple events\n"
+        "   3-4 = Consistent with the general type of person described but nothing "
+        "distinguishes THIS person from others of the same broad type across events\n"
+        "   5-6 = Reads as this person without obvious inconsistencies across events, "
+        "but their specific voice, characteristic framing, or individual opinions "
+        "don't surface\n"
+        "   7-8 = Something specific to this person's voice or perspective comes "
+        "through consistently across events\n"
+        "   9-10 = Could only have come from this person — distinctive voice and "
+        "perspective is recognisable throughout the full trajectory\n"
+        "   Watch for: trait neutralisation across events and inconsistency between "
+        "responses (agent contradicts their own earlier decisions or stated values)\n\n"
+        "3. INTERVENTION RESPONSIVENESS — Did the agent engage specifically with "
+        "each intervention's content across the trajectory?\n"
+        "   1-2 = Rarely engaged with intervention specifics — mostly generic "
+        "responses about their situation\n"
+        "   3-4 = Acknowledged event types but not details — similar interventions "
+        "would produce the same responses\n"
+        "   5-6 = Engaged with the main thrust of interventions but typically missed "
+        "specific elements\n"
+        "   7-8 = Consistently engaged with specific details across events\n"
+        "   9-10 = Consistently integrated specific details with prior context across "
+        "the full simulation\n\n"
+        "Respond in this exact JSON format:\n"
+        "{\n"
+        '  "note_plausibility": "<1-2 sentence note citing specific evidence>",\n'
+        '  "behavioral_plausibility": <integer 1-10>,\n'
+        '  "note_consistency": "<1-2 sentence note citing specific evidence>",\n'
+        '  "persona_consistency": <integer 1-10>,\n'
+        '  "note_responsiveness": "<1-2 sentence note citing specific evidence>",\n'
+        '  "intervention_responsiveness": <integer 1-10>\n'
+        "}"
+    )
+    raw = _call_llm(
+        model=config.JUDGE_MODEL,
+        system=system,
+        user=user,
+        max_tokens=config.JUDGE_MAX_TOKENS,
+        temperature=config.JUDGE_TEMPERATURE,
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="judge",
+    )
+    raw = _strip_fences(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "note_plausibility": None, "behavioral_plausibility": None,
+            "note_consistency": None,  "persona_consistency": None,
+            "note_responsiveness": None, "intervention_responsiveness": None,
+            "_raw": raw,
+        }
+
+
 # Keep old judge_simulation as an alias for backwards compatibility with Stage 2 notebooks
 def judge_simulation(
     client_anthropic,
