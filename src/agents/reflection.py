@@ -41,11 +41,14 @@ def _generate_questions(
     reflection_config: ReflectionConfig,
     recent_memories: List["Memory"],
     agent_seed: str,
+    client_openrouter=None,
 ) -> List[str]:
     """
     Ask the reflection model to generate high-level introspective questions
     from recent memories.
     """
+    from src.llm.client import _call_llm
+
     memories_text = "\n".join(
         f"[Day {m.timestamp} | {m.type} | importance {m.importance}/10] {m.description}"
         for m in recent_memories
@@ -62,14 +65,17 @@ def _generate_questions(
         "Do not ask questions that require experiences or context beyond what is described. "
         "Output ONLY the questions, one per line, no numbering or extra text."
     )
-    message = client_anthropic.messages.create(
+    text = _call_llm(
         model=config.REFLECTION_MODEL,
+        system=system,
+        user=user,
         max_tokens=256,
         temperature=config.REFLECTION_TEMPERATURE,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="agent",
     )
-    lines = [q.strip() for q in message.content[0].text.strip().split("\n") if q.strip()]
+    lines = [q.strip() for q in text.strip().split("\n") if q.strip()]
     return lines[:reflection_config.num_questions]
 
 
@@ -81,11 +87,14 @@ def _synthesise_insight(
     question: str,
     relevant_memories: List["Memory"],
     agent_seed: str,
+    client_openrouter=None,
 ) -> str:
     """
     Synthesise a first-person belief that answers the question,
     citing the specific experiences that led to it.
     """
+    from src.llm.client import _call_llm
+
     memories_text = "\n".join(
         f"[Memory #{m.id} | Day {m.timestamp} | {m.type} | importance {m.importance}/10] {m.description}"
         for m in relevant_memories
@@ -104,14 +113,16 @@ def _synthesise_insight(
         "Do not infer or invent experiences that are not explicitly described in the list above. "
         "If an insight cannot be grounded in the provided memories, do not include it."
     )
-    message = client_anthropic.messages.create(
+    return _call_llm(
         model=config.REFLECTION_MODEL,
+        system=system,
+        user=user,
         max_tokens=config.REFLECTION_MAX_TOKENS,
         temperature=config.REFLECTION_TEMPERATURE,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="agent",
     )
-    return message.content[0].text.strip()
 
 
 # ── Main reflection function ────────────────────────────────────────────────────
@@ -124,6 +135,7 @@ def maybe_reflect(
     agent_seed: str,
     current_day: int = 0,
     last_reflection_index: int = 0,
+    client_openrouter=None,
 ) -> Tuple[List["Memory"], int]:
     """
     Check whether cumulative importance since last reflection exceeds the threshold.
@@ -157,7 +169,8 @@ def maybe_reflect(
 
     # Step 1: generate questions
     questions = _generate_questions(
-        client_anthropic, config, reflection_config, recent_memories, agent_seed
+        client_anthropic, config, reflection_config, recent_memories, agent_seed,
+        client_openrouter=client_openrouter,
     )
     print(f"[reflection] Generated {len(questions)} questions:")
     for q in questions:
@@ -173,7 +186,8 @@ def maybe_reflect(
     for question in questions:
         query_embed = embed(question)
         relevant = retrieve_memories(stream, query_embed, question, retrieval_cfg, current_day)
-        insight = _synthesise_insight(client_anthropic, config, question, relevant, agent_seed)
+        insight = _synthesise_insight(client_anthropic, config, question, relevant, agent_seed,
+                                       client_openrouter=client_openrouter)
         reflection_memory = stream.add(
             description=insight,
             importance=reflection_config.reflection_importance,

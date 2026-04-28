@@ -274,6 +274,7 @@ class Agent:
             agent_seed=self.seed_narrative,
             current_day=current_day,
             last_reflection_index=self._last_reflection_index,
+            client_openrouter=self.client_openrouter,
         )
         return new_reflections
 
