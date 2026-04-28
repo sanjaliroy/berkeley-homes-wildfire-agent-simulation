@@ -106,7 +106,7 @@ events:
  
 # ── Day 36: Firewise community campaign — both agents ────────────────────────
 - day: 36
-  type: firewise_campaign
+  type: firewise_outreach
   channel: social
   target_agents: all
   content: >
@@ -129,9 +129,9 @@ events:
     retrofits prior to renewal may be eligible for reconsideration. Please contact
     your agent with supporting documentation. 
  
-# ── Day 60: Resource aid — Berkeley FireSafe programs — both agents ───────────
+# ── Day 60: Resources assistance — Berkeley FireSafe programs — both agents ───────────
 - day: 55
-  type: resource_aid
+  type: resources_assistance
   channel: official_mail
   target_agents: all
   content: >
