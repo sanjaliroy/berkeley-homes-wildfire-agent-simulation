@@ -6,83 +6,159 @@ duration_days: 60
 # Use "all" to target every loaded agent, or a specific name like "Margaret" or "Eleanor".
 
 events:
-
-# ── Day 1: Wildfire news — both agents see this ───────────────────────────────
+ 
+# ── Day 1: Firewise leader emails about ember ordinance ─────────
 - day: 1
-  type: wildfire_news
-  channel: news_media
-  target_agents: all
-  content: >
-    A fast-moving wildfire in Napa County has burned over 2,000 acres and destroyed
-    15 homes since Saturday. Cal Fire has deployed additional resources as dry winds
-    are expected to continue through the week. Authorities are urging residents in
-    high-risk areas throughout the Bay Area to review their defensible space and
-    evacuation plans.
-
-# ── Day 10: Official defensible space law notice — both agents ────────────────
-- day: 10
-  type: defensible_space_law
-  channel: official_mail
-  target_agents: all
-  content: >
-    Dear Resident, this letter is to inform you that under Assembly Bill 3074,
-    the defensible space requirements for your property have been updated. You are
-    now required to maintain a Zone 0 ember-resistant area within 0–5 feet of your
-    structure, in addition to the existing Zone 1 and Zone 2 requirements.
-    Compliance inspections will begin in your area within 90 days.
-
-# ── Day 21: Fire service visits Margaret's door ───────────────────────────────
-- day: 21
-  type: fire_service_doorknock
-  channel: social
-  target_agents: Margaret
-  content: >
-    A uniformed fire prevention officer from the Berkeley Fire Department knocks
-    on your door. They explain they are conducting defensible space assessments in
-    the neighborhood as part of a Firewise USA community initiative. They offer to
-    walk your property and point out areas where vegetation management could reduce
-    your wildfire risk.
-
-# ── Day 24: Eleanor hears from her Firewise coordinator ──────────────────────
-- day: 24
   type: firewise_outreach
   channel: social
-  target_agents: Eleanor
+  target_agents: all
   content: >
-    Your local Firewise coordinator sends a message to the neighborhood group.
-    Two houses on the next block were just dropped by their insurance company.
-    The coordinator is urging everyone to document completed mitigation work
-    before the next round of inspections, which are expected before June 1st.
-
-# ── Day 30: Both agents observe neighbor activity ────────────────────────────
-- day: 30
-  type: neighbor_clearing_brush
+    You receive an email from your Firewise leader that the City of Berkeley
+    has announced a new ember-resistant zone ordinance requiring all homeowners
+    in designated wildfire-urban interface areas to establish a non-combustible
+    Zone 0 within 5 feet of their structure by June 1, 2026. The ordinance,
+    modeled on state guidance, was passed unanimously by the City Council last
+    night. Violations after the deadline may result in fines of up to $500 per
+    inspection cycle.
+ 
+# ── Day 12: In-person defensible space inspection  ───────────────
+- day: 12
+  type: defensible_space_inspection
+  channel: direct_experience
+  target_agents: all
+  content: >
+    Two uniformed inspectors from the Berkeley Fire Department knock on your door.
+    They introduce themselves and explain they are conducting mandatory defensible
+    space inspections across the neighborhood, which has been classified as a
+    high-risk wildfire-urban interface zone under the new city ordinance. They ask
+    permission to walk your property and invite you to join them so they can talk
+    you through what they are seeing in real time.
+ 
+    As you move through the yard together, the inspectors pause at each area and
+    point out specific conditions, explaining what needs to change and why:
+ 
+    At the foundation and walls — Zone 0 (0–5 feet):
+    - They crouch near the base of the house and flag dry leaf litter and wood
+      mulch packed against the siding, explaining these are direct ember ignition
+      points. They instruct you to remove all dead or dry vegetation and replace
+      combustible ground cover with gravel or decomposed granite.
+    - They check under the deck and note accumulated dead material, which must be
+      fully cleared.
+    - They flag a stacked wood pile beside the back wall and explain that no wood,
+      propane tanks, or combustible furniture can remain within 5 feet of the
+      structure.
+ 
+    Moving into the yard — Zone 1 (5–30 feet):
+    - They point to several shrubs that have grown into one another and explain
+      that continuous vegetation acts as a fuel ladder. Plants need to be spaced
+      so fire cannot travel between them toward the house.
+    - They look up at tree branches hanging over the roofline and note that all
+      branches must be trimmed to a minimum of 10 feet from the ground.
+    - They walk the lawn and remind you that grass must be kept mowed to no more
+      than 4 inches throughout fire season, and that dead branches and pine needles
+      must be regularly cleared from shrubs and trees.
+ 
+    Further out — Zone 2 (30–100 feet):
+    - They note that while this zone looks better, vegetation density still needs
+      to be reduced and spacing between shrubs and trees widened to slow any
+      approaching fire.
+    - They gesture at the gutters along the roofline and emphasize that roof and
+      gutter debris must be cleared, as accumulated dry material is a common ember
+      catch point.
+ 
+    Back at the door — Ember-Resistant Requirements:
+    - They inspect the attic and foundation vents and flag them as non-compliant,
+      explaining that standard mesh vents allow embers to enter. Ember-resistant
+      vent covers must be installed on all foundation, eave, and attic openings.
+    - They point out gaps along the bottom of the front door frame and note that
+      any gap larger than 1/16 inch in exterior walls or under doors must be sealed
+      to prevent ember intrusion.
+    - They note that single-pane windows should be upgraded or fitted with fine
+      wire mesh screens where feasible.
+ 
+    At the end of the walkthrough, one inspector opens a tablet, pulls up the
+    completed inspection report, and shows you a QR code on the screen. They
+    explain that scanning it will take you to your official digital inspection
+    report, which includes a full record of today's findings and the items
+    discussed during the walkthrough. They are clear that you are not expected
+    to have everything done before the follow-up visit. What matters is that
+    you can show meaningful progress on at least some of the flagged items.
+    The re-inspection in 30 days is about seeing that you have started, not that 
+    you have finished. They hand you a printed card with the QR code and their 
+    department contact information, answer your final questions, and move on to the next house.
+ 
+# ── Day 24: Neighbor pressure — neighbor begins work, raises shared risk ──────
+- day: 24
+  type: neighbor_pressure
   channel: social
   target_agents: all
   content: >
-    You notice your neighbor spending the weekend clearing dead brush and trimming
-    tree branches that overhang their roof. They mention they hired a defensible
-    space contractor after getting a notice from the fire department. The contractor
-    quoted them $1,200 for the full property.
-
-# ── Day 42: Insurance non-renewal letter — both agents ───────────────────────
-- day: 42
+    Your neighbor has started clearing their vegetation and removing combustible
+    materials along the fence line you share. They knock on your door to let you
+    know what they are doing. They are friendly about it but get to a point that
+    even after putting in all this work on their own property, their home is still 
+    going to be at risk if yours stays the way it is. The houses are close enough 
+    that embers from an unprepared property can jump the gap — so no matter how 
+    much they do on their side, it only goes so far. They are not accusatory, but 
+    they are clearly a little anxious about it. They ask, somewhat awkwardly, 
+    whether you are planning to do any work on your side before the next inspection 
+    comes around.
+ 
+# ── Day 36: Firewise community campaign — both agents ────────────────────────
+- day: 36
+  type: firewise_campaign
+  channel: social
+  target_agents: all
+  content: >
+    Your neighborhood's Firewise leader sends a message to the block group. The
+    community has launched a month-long preparedness push ahead of the June
+    inspection deadline. Neighbors are being encouraged to document completed
+    mitigation work with photos, share contractor referrals, and participate in
+    a community workday scheduled for next Saturday.
+ 
+# ── Day 48: Insurance non-renewal letter — both agents ───────────────────────
+- day: 48
   type: insurance_non_renewal
   channel: official_mail
   target_agents: all
   content: >
     Dear Policyholder, we regret to inform you that your homeowners insurance
-    policy will not be renewed upon its expiration date of August 15, 2026. This
-    decision is based on our assessment of elevated wildfire risk in your area.
-    You may be eligible for coverage through the California FAIR Plan.
-
-# ── Day 55: Nearby wildfire — both agents experience this ────────────────────
+    policy will not be renewed upon its expiration date of August 15, 2026.
+    This decision reflects our updated wildfire risk model for your ZIP code.
+    Properties that can document completed defensible space work and ember-resistant
+    retrofits prior to renewal may be eligible for reconsideration. Please contact
+    your agent with supporting documentation. 
+ 
+# ── Day 60: Resource aid — Berkeley FireSafe programs — both agents ───────────
 - day: 55
-  type: nearby_wildfire
-  channel: direct_experience
+  type: resource_aid
+  channel: official_mail
   target_agents: all
   content: >
-    A wildfire has broken out in the hills approximately 3 miles from your home.
-    You can see a large smoke plume from your backyard and smell smoke in the air.
-    Local authorities have issued an evacuation warning for your neighborhood.
-    Emergency vehicles are passing frequently on the main road.
+    Dear Resident, Berkeley FireSafe and the Berkeley Fire Department want to make
+    sure you are aware of the free programs available to help you meet your
+    defensible space requirements. You do not need to pay out of pocket to get
+    started — several no-cost services are available to residents in high-risk
+    zones right now.
+ 
+    Home Hardening Mesh Program: Free metal mesh for vents and gutter guards is
+    available to residents in Zones 2 and 3. This is one of the most effective
+    ways to stop embers from entering your home and can be installed yourself.
+ 
+    Chipper Program: If you have cleared vegetation from your property, Berkeley
+    FireSafe will pick it up curbside, chip it, and dispose of it at no cost.
+ 
+    Eucalyptus Understory Cleanup Program: If you have eucalyptus trees on your
+    property, this one-time free service will remove the dead leaves, bark litter,
+    and limbs from the understory — among the most hazardous fire fuels in the
+    East Bay hills.
+ 
+    Resident Assistance Program (RAP): For residents in the Grizzly Peak and
+    Panoramic Hills areas who need additional support, RAP provides financial and
+    logistical help to clear vegetation and meet inspection requirements. If cost
+    or physical capacity has been a barrier, this program is specifically designed
+    for your situation.
+ 
+    To request any of these services or ask questions, email wildfire@berkeleyca.gov
+    or call 510-981-5620. More information on all programs is available at
+    berkeleyfiresafe.org.
