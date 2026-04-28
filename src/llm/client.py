@@ -682,6 +682,114 @@ def judge_full_simulation(
         }
 
 
+# ── Held-out fidelity judge ───────────────────────────────────────────────────
+
+def judge_held_out(
+    client_anthropic,
+    config: "Config",
+    seed_narrative: str,
+    event_type: str,
+    real_response: str,
+    real_context: str,
+    simulated_decision: str,
+    simulated_reasoning: str,
+    client_openrouter=None,
+) -> dict:
+    """
+    LLM-as-judge comparing a simulated agent response against a real held-out
+    interview response for the same scenario.
+
+    The real_response is a brief verbatim excerpt from a research interview.
+    The simulated response is an LLM-generated narrative. The judge assesses
+    how faithfully the simulation captures how the real person actually responded —
+    not whether either response is 'good'.
+
+    Returns dict with three 1-10 scores and notes:
+        thematic_alignment    — same underlying concerns / issues engaged
+        stance_alignment      — same attitude / position toward the situation
+        voice_alignment       — similar tone, hedging, register, candour
+    """
+    system = (
+        "You are comparing a simulated agent response against a real interview "
+        "response from the same person on the same topic. Your task is to assess "
+        "how faithfully the simulation captures how this real person actually "
+        "responded — not whether either response is good or appropriate.\n\n"
+        "The real response is a brief verbatim excerpt from a research interview. "
+        "It may be incomplete, conversational, or fragmentary. Judge alignment only "
+        "on the substance that is present in the real response — do not penalise "
+        "the simulation for covering ground the excerpt doesn't reach.\n\n"
+        "The simulated response is an LLM-generated narrative and will typically "
+        "be longer and more structured. Focus on whether the underlying concerns, "
+        "attitude, and voice match — not surface-level phrasing.\n\n"
+        "Score 5-6 for responses that broadly align in direction. Score 7+ only "
+        "when alignment is clearly and specifically detectable. Score 1-2 when "
+        "the simulation contradicts or is substantially at odds with the real response."
+    )
+    user = (
+        f"AGENT SEED NARRATIVE:\n{seed_narrative}\n\n"
+        f"SCENARIO: {event_type.replace('_', ' ').upper()}\n\n"
+        f"REAL INTERVIEW RESPONSE:\n{real_response}\n"
+        f"Context: {real_context}\n\n"
+        f"SIMULATED DECISION:\n{simulated_decision}\n\n"
+        f"SIMULATED REASONING:\n{simulated_reasoning}\n\n"
+        "Score the simulation against the real response on three dimensions "
+        "(integer 1-10). Write a 1-2 sentence note citing specific evidence "
+        "before each score.\n\n"
+        "1. THEMATIC ALIGNMENT — Do both responses engage with the same underlying "
+        "concerns, priorities, or issues when faced with this situation?\n"
+        "   1-2 = Simulation focuses on entirely different concerns than the real response\n"
+        "   3-4 = Loosely related themes but misses the specific issues the real person raised\n"
+        "   5-6 = Broadly addresses the same territory with some shared concerns\n"
+        "   7-8 = Clearly engages with the same specific concerns the real person raised\n"
+        "   9-10 = Near-identical focus — simulation captures the real person's priorities closely\n\n"
+        "2. STANCE ALIGNMENT — Does the simulated agent take the same general "
+        "attitude or position as the real person (cooperative vs resistant, "
+        "concerned vs dismissive, proactive vs reactive)?\n"
+        "   1-2 = Simulation takes the opposite stance to the real person\n"
+        "   3-4 = Stance is adjacent but meaningfully different in direction or intensity\n"
+        "   5-6 = Generally similar stance with notable differences in emphasis or framing\n"
+        "   7-8 = Closely matches the real person's attitude and position\n"
+        "   9-10 = Stance is effectively indistinguishable from the real response\n\n"
+        "3. VOICE ALIGNMENT — Does the simulation capture the tone, hedging, "
+        "directness, or register of how the real person spoke?\n"
+        "   1-2 = Completely different register — e.g. simulation is polished and certain "
+        "where the real person was hesitant and candid\n"
+        "   3-4 = Some stylistic overlap but the characteristic voice doesn't come through\n"
+        "   5-6 = Broadly similar tone without strong resemblance to the specific voice\n"
+        "   7-8 = Captures characteristic elements of how this person speaks\n"
+        "   9-10 = Could plausibly be mistaken for the real person's natural speech\n\n"
+        "Respond in this exact JSON format:\n"
+        "{\n"
+        '  "note_thematic": "<1-2 sentence note citing specific evidence>",\n'
+        '  "thematic_alignment": <integer 1-10>,\n'
+        '  "note_stance": "<1-2 sentence note citing specific evidence>",\n'
+        '  "stance_alignment": <integer 1-10>,\n'
+        '  "note_voice": "<1-2 sentence note citing specific evidence>",\n'
+        '  "voice_alignment": <integer 1-10>\n'
+        "}"
+    )
+    raw = _call_llm(
+        model=config.JUDGE_MODEL,
+        system=system,
+        user=user,
+        max_tokens=config.JUDGE_MAX_TOKENS,
+        temperature=config.JUDGE_TEMPERATURE,
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="judge",
+    )
+    raw = _strip_fences(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "note_thematic": None, "thematic_alignment": None,
+            "note_stance": None,   "stance_alignment": None,
+            "note_voice": None,    "voice_alignment": None,
+            "_raw": raw,
+        }
+
+
 # ── Judge v2 — 1-10 scale, evidence-anchored, seed-narrative only ─────────────
 
 def judge_intervention_v2(
