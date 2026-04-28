@@ -513,15 +513,15 @@ def judge_intervention(
         "   1=Did not engage | 3=Engaged broadly but not with specifics | "
         "5=Integrated event details with prior context\n\n"
         "For each dimension write a concise 1–2 sentence note explaining your score, "
-        "then give the integer score.\n\n"
+        "then give the score.\n\n"
         "Respond in this exact JSON format:\n"
         "{\n"
         '  "note_plausibility": "<1-2 sentence explanation>",\n'
-        '  "behavioral_plausibility": <integer 1-5>,\n'
+        '  "behavioral_plausibility": <number 1-5, half-points allowed e.g. 3.5>,\n'
         '  "note_consistency": "<1-2 sentence explanation>",\n'
-        '  "persona_consistency": <integer 1-5>,\n'
+        '  "persona_consistency": <number 1-5, half-points allowed e.g. 3.5>,\n'
         '  "note_responsiveness": "<1-2 sentence explanation>",\n'
-        '  "intervention_responsiveness": <integer 1-5>\n'
+        '  "intervention_responsiveness": <number 1-5, half-points allowed e.g. 3.5>\n'
         "}"
     )
     raw = _call_llm(
@@ -605,15 +605,15 @@ def judge_full_simulation(
         "interventions overall?\n"
         "   1=Rarely engaged | 3=Engaged broadly | "
         "5=Consistently integrated event details with prior context\n\n"
-        "For each dimension write a concise 1–2 sentence note, then give the integer score.\n\n"
+        "For each dimension write a concise 1–2 sentence note, then give the score.\n\n"
         "Respond in this exact JSON format:\n"
         "{\n"
         '  "note_plausibility": "<1-2 sentence explanation>",\n'
-        '  "behavioral_plausibility": <integer 1-5>,\n'
+        '  "behavioral_plausibility": <number 1-5, half-points allowed e.g. 3.5>,\n'
         '  "note_consistency": "<1-2 sentence explanation>",\n'
-        '  "persona_consistency": <integer 1-5>,\n'
+        '  "persona_consistency": <number 1-5, half-points allowed e.g. 3.5>,\n'
         '  "note_responsiveness": "<1-2 sentence explanation>",\n'
-        '  "intervention_responsiveness": <integer 1-5>\n'
+        '  "intervention_responsiveness": <number 1-5, half-points allowed e.g. 3.5>\n'
         "}"
     )
     raw = _call_llm(
