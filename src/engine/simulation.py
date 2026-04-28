@@ -292,14 +292,13 @@ class Simulation:
             if verbose and tick_result["events_processed"]:
                 _print_tick_summary(tick_result)
 
-        self.logger.close()
         print(f"\n  Simulation '{self.sim_config.run_id}' complete.")
         print(f"  {self.current_tick} days simulated, "
               f"{len(self.tick_results)} ticks with events.")
         return self.tick_results
 
     def close(self):
-        """Close the logger. Call this if you used step() manually rather than run()."""
+        """Close the logger. Call after run() completes and any final log entries are written."""
         self.logger.close()
 
 
