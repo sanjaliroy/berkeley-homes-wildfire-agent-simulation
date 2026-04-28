@@ -251,7 +251,11 @@ def _call_llm(
         )
         u = response.usage
         usage_tracker.add(call_type, u.prompt_tokens, u.completion_tokens)
-        return response.choices[0].message.content or ""
+        content = response.choices[0].message.content
+        if content is None:
+            finish = response.choices[0].finish_reason
+            print(f"[client] WARNING: {model} returned None content (finish_reason={finish!r}). Returning empty string.")
+        return content or ""
 
 
 # ── Embedding ──────────────────────────────────────────────────────────────────
