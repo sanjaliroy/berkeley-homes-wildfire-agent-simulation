@@ -69,7 +69,7 @@ def _generate_questions(
         model=config.REFLECTION_MODEL,
         system=system,
         user=user,
-        max_tokens=512,
+        max_tokens=1024,
         temperature=config.REFLECTION_TEMPERATURE,
         client_anthropic=client_anthropic,
         client_openrouter=client_openrouter,
