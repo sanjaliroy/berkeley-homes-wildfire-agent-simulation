@@ -251,7 +251,7 @@ def _call_llm(
         )
         u = response.usage
         usage_tracker.add(call_type, u.prompt_tokens, u.completion_tokens)
-        return response.choices[0].message.content
+        return response.choices[0].message.content or ""
 
 
 # ── Embedding ──────────────────────────────────────────────────────────────────
