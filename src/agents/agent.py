@@ -298,12 +298,12 @@ class Agent:
 
         # 4. Store — record what happened (observation) and what was decided
         obs_mem = self.store(
-            description=f"[Day {current_day}] {event['channel']}: {event['content'][:120]}",
+            description=f"[Day {current_day}] {event['channel']}: {event['content']}",
             memory_type="observation",
             current_day=current_day,
         )
         dec_mem = self.store(
-            description=f"[Day {current_day}] My response to {event['type']}: {decision[:120]}",
+            description=f"[Day {current_day}] My response to {event['type']}: {decision}",
             memory_type="decision",
             current_day=current_day,
         )
