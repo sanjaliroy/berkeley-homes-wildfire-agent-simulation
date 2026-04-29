@@ -341,7 +341,7 @@ class Agent:
             "compliance_status": self.compliance_status,
             "attitude": self.attitude,
             "actions_taken_count": len(self.actions_taken),
-            "last_action_preview": self.actions_taken[-1][:100] if self.actions_taken else None,
+            "last_action_preview": self.actions_taken[-1] if self.actions_taken else None,
         }
 
     def pretty_print(self):
