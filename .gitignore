@@ -3,3 +3,6 @@ data/embeddings_cache/ # cached embeddings
 __pycache__/
 .DS_Store
 *.pyc
+System Design and Notes/
+excalidraw.log
+memory/
