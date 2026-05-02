@@ -99,6 +99,16 @@ simulation_outputs/
 tests/
 ```
 
-## Citation
+## References
 
-Park, J. S., O'Brien, J., Cai, C. J., Morris, M. R., Liang, P., & Bernstein, M. S. (2023). Generative agents: Interactive simulacra of human behavior. *UIST 2023*.
+Hou, A. B., Du, H., Wang, Y., Zhang, J., Wang, Z., Liang, P. P., Khashabi, D., Gardner, L., & He, T. (2025). Can a society of generative agents simulate human behavior and inform public health policy? A case study on vaccine hesitancy. *arXiv preprint arXiv:2503.09639*. https://arxiv.org/abs/2503.09639
+
+Park, J. S., O'Brien, J. C., Cai, C. J., Morris, M. R., Liang, P., & Bernstein, M. S. (2023). Generative agents: Interactive simulacra of human behavior. *arXiv*. https://arxiv.org/abs/2304.03442
+
+Ruggiero, E. (2025, February 26). Berkeley's new fire hazard maps could impact insurance, property requirements. *Berkeleyside*. https://www.berkeleyside.org/2025/02/26/cal-fire-hazard-severity-zone-maps-berkeley
+
+Semancik, A. (2025, February 6). The economics of a disaster: How the LA wildfires may impact the economy. *Ohio University*. https://www.ohio.edu/news/2025/02/economics-disaster-how-la-wildfires-may-impact-economy
+
+Wilkin, K. M., Benterou, D., & Stasiewicz, A. M. (2025). High fire hazard Wildland Urban Interface (WUI) residences in California lack voluntary and mandated wildfire risk mitigation compliance in Home Ignition Zones. *International Journal of Disaster Risk Reduction, 124*, 105435. https://doi.org/10.1016/j.ijdrr.2025.105435
+
+Xie, Y., Jiang, B., Mallick, T., Bergerson, J., Hutchison, J. K., Verner, D. R., Branham, J., Alexander, M. R., Ross, R. B., Feng, Y., Levy, L. A., Su, W. J., & Taylor, C. J. (2025). MARSHA: Multi-agent RAG system for hazard adaptation. *npj Climate Action, 4*(1), 70. https://doi.org/10.1038/s44168-025-00254-1
