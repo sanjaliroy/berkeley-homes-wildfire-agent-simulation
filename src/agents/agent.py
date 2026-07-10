@@ -119,6 +119,7 @@ class Agent:
                 importance = score_importance(
                     self.client_anthropic, description, self.seed_narrative,
                     client_openrouter=self.client_openrouter,
+                    llm_config=self.llm_config,
                 )
 
             self.memory.add(
@@ -228,6 +229,7 @@ class Agent:
             system_prompt,
             user_prompt,
             client_openrouter=self.client_openrouter,
+            llm_config=self.llm_config,
         )
         return self._parse_response(raw)
 
@@ -248,6 +250,7 @@ class Agent:
             importance = score_importance(
                 self.client_anthropic, description, self.seed_narrative,
                 client_openrouter=self.client_openrouter,
+                llm_config=self.llm_config,
             )
         return self.memory.add(
             description=description,

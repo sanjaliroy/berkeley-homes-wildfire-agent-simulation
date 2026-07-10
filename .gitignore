@@ -1,4 +1,4 @@
-outputs/runs/          # JSONL run logs (can get large)
+outputs/               # working dir: run JSONLs + generated eval workbooks
 data/embeddings_cache/ # cached embeddings
 __pycache__/
 .DS_Store

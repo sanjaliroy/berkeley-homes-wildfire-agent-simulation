@@ -59,7 +59,7 @@ export OPENROUTER_API_KEY=...  # optional, for non-Claude models
 
 ## Running
 
-**Simulation:** `notebooks/run_simulation.ipynb`
+**Simulation:** `notebooks/run_simulation_v2.ipynb` — runs the 4-variant ablation matrix with 5 replicates per variant, in parallel, once per model family (Claude / OpenAI).
 
 ```python
 from src.engine.simulation import SimulationConfig, Simulation
@@ -78,7 +78,7 @@ sim.run(verbose=True)
 sim.close()
 ```
 
-**Evaluation:** `notebooks/run_evaluation.ipynb` reads JSONL logs from `simulation_outputs/runs/` and exports scored results to `simulation_outputs/eval/`.
+**Evaluation:** `notebooks/run_evaluation_v2.ipynb` reads JSONL logs from `simulation_outputs/runs/`, runs the LLM judge (always the opposite model family to the simulation), computes mean ± SE and 95% CIs across replicates, and exports scored results to `simulation_outputs/eval/`.
 
 ## Project Structure
 
@@ -92,7 +92,9 @@ src/
   environment/    # channels.py (event framing), network.py
   llm/            # client.py (model routing, judge functions, usage tracking)
   output/         # logger.py (JSONL)
-notebooks/        # run_simulation, run_evaluation, stage2 validation, prototype
+notebooks/        # run_simulation_v2, run_evaluation_v2, prototypes, preprocessing
+  agent_validation/  # per-agent validation notebooks (beth, eleanor, margaret)
+  archive/           # superseded notebooks (v1 run_simulation/run_evaluation, etc.)
 simulation_outputs/
   runs/           # JSONL logs per run
   eval/           # Scored Excel exports
