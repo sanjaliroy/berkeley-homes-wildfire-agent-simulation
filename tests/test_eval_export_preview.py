@@ -74,16 +74,18 @@ def _synthetic_frames(ns):
     fullsim["overall"] = fullsim[DIMS].mean(axis=1)
 
     jv_rows = []
-    for repeat in range(1, 6):
-        for aid, name in AGENTS:
-            row = {"run_label": "claude_Baseline_rep1", "run_id": "claude_Baseline_rep1_20260710_000000",
-                   "variant": "Baseline", "rep": 1,
-                   "agent_id": aid, "agent_display_name": name, "repeat": repeat,
-                   "bp_note": "sample", "pc_note": "sample", "ir_note": "sample",
-                   "judge_model": "openai/gpt-5.4"}
-            for d in DIMS:
-                row[d] = float(np.clip(4.8 + rng.normal(0, 0.05), 1, 5))
-            jv_rows.append(row)
+    for v in VARIANTS:               # replicate 1 of every condition, re-judged 5x
+        for repeat in range(1, 6):
+            for aid, name in AGENTS:
+                row = {"run_label": f"claude_{v}_rep1",
+                       "run_id": f"claude_{v}_rep1_20260710_000000",
+                       "variant": v, "rep": 1,
+                       "agent_id": aid, "agent_display_name": name, "repeat": repeat,
+                       "bp_note": "sample", "pc_note": "sample", "ir_note": "sample",
+                       "judge_model": "openai/gpt-5.4"}
+                for d in DIMS:
+                    row[d] = float(np.clip(4.8 + SHIFT[v] + rng.normal(0, 0.05), 1, 5))
+                jv_rows.append(row)
     judge_var = pd.DataFrame(jv_rows)
     judge_var["overall"] = judge_var[DIMS].mean(axis=1)
 
@@ -130,7 +132,7 @@ def test_eval_export_preview(capsys):
     # one cell — several substrings now appear in both an old cell and the new
     # report-tables cell, so anchor them to the defining statement.
     for marker in ["def mean_se", "base_means = {c:", "MODEL COMPARISON", "COST AND LATENCY",
-                   "per_repeat = judge_var.groupby", "FULL SIMULATION SCORES BY AGENT",
+                   "jv_per_repeat = (judge_var.groupby", "FULL SIMULATION SCORES BY AGENT",
                    "SCORING BY CRITERION", "def event_label", "REPORT_TABLES = ["]:
         exec(_cell(cells, marker), ns)
 
@@ -154,8 +156,11 @@ def test_eval_export_preview(capsys):
     for heading in ["6.2.1 OVERALL RESULTS", "6.2.3 MODEL COMPARISON",
                     "6.2.4 COST AND LATENCY", "JUDGE VARIANCE",
                     "FULL SIMULATION SCORES BY AGENT", "CI excludes 0",
-                    "REPORT-FORMATTED TABLES", "Simulation Variance (run-to-run)",
-                    "Variance Comparison"]:
+                    "REPORT-FORMATTED TABLES", "Simulation Variance — mean ± SE",
+                    "Judge Variance — mean ± SE", "Variance Comparison",
+                    "CI build-up ① — Replicate-level overall scores",
+                    "CI build-up ③ — Delta 95% CI (per-comparison + family-wise)",
+                    "Dunnett 95% CI (FW)"]:
         assert heading in out, f"missing table heading: {heading}"
 
     print(f"\nSample workbook written to: {sample_path}")
