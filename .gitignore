@@ -6,3 +6,7 @@ __pycache__/
 System Design and Notes/
 excalidraw.log
 memory/
+
+# Secrets — never commit
+env.local
+.env
