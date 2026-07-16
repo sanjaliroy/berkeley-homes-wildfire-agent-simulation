@@ -741,6 +741,108 @@ def judge_full_simulation(
 
 
 # Keep old judge_simulation as an alias for backwards compatibility with Stage 2 notebooks
+def _format_trajectory(all_decisions: list) -> str:
+    return "\n\n".join(
+        f"--- Day {d['day']}: {d['event_type'].upper()} ---\n"
+        f"INTERVENTION: {d['intervention']}\n"
+        f"RESIDENT DECISION: {d['decision']}\n"
+        f"RESIDENT REASONING: {d['reasoning']}"
+        for d in all_decisions
+    )
+
+
+def judge_pairwise(
+    client_anthropic,
+    config: "Config",
+    seed_narrative: str,
+    memory_seeds: list,
+    trajectory_a: list,
+    trajectory_b: list,
+    client_openrouter=None,
+) -> dict:
+    """
+    Blind pairwise judge: two trajectories for the SAME resident facing the SAME events,
+    produced by two different system configurations. Returns a winner per dimension.
+
+    Absolute 1-5 scoring saturates on this task (the judge parks at 4-5 regardless of
+    condition), so it cannot resolve the ablation contrasts. Pairwise only asks the judge
+    to detect a *difference*, never to locate an absolute point on a scale — and because
+    both trajectories share one seed, per-resident difficulty cancels out.
+
+    The caller is responsible for randomising which condition is A and which is B, and
+    should run each pair in both orders to cancel position bias.
+
+    This is the production judge (all three dimensions scored in one call). For iterating
+    on the prompt itself, use notebooks/judge_prompt_test_bench.ipynb, which has an
+    editable copy that scores one dimension per call.
+
+    Returns dict of {dimension: "A" | "B" | "tie"} plus a short note per dimension.
+    """
+    seeds_text = _format_memory_seeds(memory_seeds)
+
+    system = (
+        "You are an expert evaluator comparing two accounts of how the SAME resident "
+        "responded to the SAME sequence of wildfire mitigation events. The two accounts "
+        "come from different sources; you know nothing else about them.\n\n"
+        "Your job is to decide which account portrays the resident more convincingly, "
+        "criterion by criterion. Judge whether THIS resident — with their specific history, "
+        "constraints and worldview — is more vividly and specifically present. "
+        "Compliance, refusal, deflection and reframing are all legitimate: never reward an "
+        "account simply for being more cooperative.\n\n"
+        "The accounts may be very similar. If, on a given criterion, you genuinely cannot "
+        "tell them apart, answer \"tie\" — a tie is a legitimate and useful answer. But if "
+        "one is even slightly better on that criterion, say so rather than defaulting to a tie."
+    )
+    user = (
+        f"RESIDENT SEED NARRATIVE:\n{seed_narrative}\n\n"
+        f"RESIDENT MEMORY SEEDS (background experiences):\n{seeds_text}\n\n"
+        f"===== ACCOUNT A =====\n{_format_trajectory(trajectory_a)}\n\n"
+        f"===== ACCOUNT B =====\n{_format_trajectory(trajectory_b)}\n\n"
+        "For each criterion below, answer \"A\", \"B\", or \"tie\".\n\n"
+        "1. BEHAVIORAL PLAUSIBILITY — In which account is the resident's behaviour more "
+        "plausible given their specific circumstances, role and constraints (as opposed to "
+        "plausible for a generic homeowner)?\n\n"
+        "2. PERSONA CONSISTENCY — In which account is this resident's particular history, "
+        "named experiences, costs, opinions and characteristic voice more clearly present? "
+        "Which account would look more different if the seed narrative were swapped for "
+        "someone else's?\n\n"
+        "3. INTERVENTION RESPONSIVENESS — In which account does the resident engage more "
+        "specifically with the actual content of each intervention, and connect events to "
+        "what came before?\n\n"
+        "For each criterion, first give a one-sentence reason quoting a phrase from each "
+        "account, then the verdict.\n\n"
+        "Respond in this exact JSON format:\n"
+        "{\n"
+        '  "note_plausibility": "<one sentence, quoting both accounts>",\n'
+        '  "behavioral_plausibility": "<A|B|tie>",\n'
+        '  "note_consistency": "<one sentence, quoting both accounts>",\n'
+        '  "persona_consistency": "<A|B|tie>",\n'
+        '  "note_responsiveness": "<one sentence, quoting both accounts>",\n'
+        '  "intervention_responsiveness": "<A|B|tie>"\n'
+        "}"
+    )
+    raw = _call_llm(
+        model=config.JUDGE_MODEL,
+        system=system,
+        user=user,
+        max_tokens=config.JUDGE_MAX_TOKENS,
+        temperature=config.JUDGE_TEMPERATURE,
+        client_anthropic=client_anthropic,
+        client_openrouter=client_openrouter,
+        call_type="judge",
+    )
+    raw = _strip_fences(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "note_plausibility": None, "behavioral_plausibility": None,
+            "note_consistency": None,  "persona_consistency": None,
+            "note_responsiveness": None, "intervention_responsiveness": None,
+            "_raw": raw,
+        }
+
+
 def judge_simulation(
     client_anthropic,
     config: "Config",
