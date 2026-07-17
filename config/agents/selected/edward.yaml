@@ -16,6 +16,7 @@ persona: Walter is a homeowner over 65 living on a large half-acre lot on the ea
 risk_zone: high
 compliance_status: compliant
 insurance_status: null
+property_type: owner
 held_out_responses:
   insurance_non_renewal:
     real_response: null
