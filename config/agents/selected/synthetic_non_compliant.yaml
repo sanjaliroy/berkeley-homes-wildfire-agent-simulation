@@ -20,6 +20,7 @@ persona: >
 risk_zone: medium
 compliance_status: non_compliant
 insurance_status: null
+property_type: renter
 
 held_out_responses:
   insurance_non_renewal:
