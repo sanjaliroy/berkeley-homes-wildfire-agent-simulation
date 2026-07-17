@@ -12,6 +12,7 @@ persona: Laura is a Berkeley Hills homeowner who lives with her handy husband an
 risk_zone: high
 compliance_status: partially_compliant
 insurance_status: retained
+property_type: owner
 held_out_responses:
   insurance_non_renewal:
     real_response: It's very unfair, and it feels capricious. And I think it adds.
