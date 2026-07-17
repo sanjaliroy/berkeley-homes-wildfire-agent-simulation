@@ -13,6 +13,7 @@ persona: Margaret is an older Berkeley Hills resident living on Wildcat Canyon w
 risk_zone: high
 compliance_status: compliant
 insurance_status: non_renewed
+property_type: owner
 held_out_responses:
   insurance_non_renewal:
     real_response: If you were able to get some kind of guarantee from the insurance,
