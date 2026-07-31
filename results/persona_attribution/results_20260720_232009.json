@@ -1,0 +1,100 @@
+{
+  "timestamp": "20260720_232009",
+  "judge_model": "openai/gpt-5.4",
+  "judge_temp": 0.0,
+  "rubric": "rubric_v2_locked",
+  "agents": {
+    "beth": "Linda",
+    "edward": "Walter",
+    "jennifer": "Laura",
+    "lola": "Margaret",
+    "miriam": "Miriam Voss"
+  },
+  "owner_ids": [
+    "beth",
+    "edward",
+    "jennifer",
+    "lola"
+  ],
+  "renter_id": "miriam",
+  "memory_dependent_days": [
+    24,
+    48,
+    55
+  ],
+  "attribution_reps": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "stats": {
+    "claim1_pointwise": {
+      "matched_mean": 4.333333333333333,
+      "mismatched_mean": 3.691666666666667,
+      "separation": 0.6416666666666662,
+      "cliffs_delta": 0.44814814814814813,
+      "delta_ci_low": 0.36972048611111114,
+      "delta_ci_high": 0.5214999999999999,
+      "delta_magnitude": "medium",
+      "auc": 0.7240740740740741,
+      "n_matched": 120,
+      "n_mismatched": 360
+    },
+    "claim2_forcedchoice": {
+      "pooled_accuracy": 0.8166666666666667,
+      "response_level_correct": 21,
+      "response_level_n": 24,
+      "response_level_accuracy": 0.875,
+      "binomial_p": 2.0323298599578266e-10,
+      "wilson_ci_low": 0.6899571185214243,
+      "wilson_ci_high": 0.9565574496068442,
+      "miriam_accuracy": 1.0
+    },
+    "claim3_interaction_p": 0.10298356546104256,
+    "claim3_memory_null": {
+      "baseline_acc": 0.8583333333333334,
+      "ablation2_acc": 0.8166666666666668,
+      "diff": -0.04166666666666663,
+      "mcnemar_p": 0.45825831964612007,
+      "diff_ci_low": -0.1416666666666666,
+      "diff_ci_high": 0.06666666666666654,
+      "n_discordant": 29,
+      "n_base_correct_abl_wrong": 17,
+      "n_base_wrong_abl_correct": 12,
+      "equivalent": false,
+      "n_pairs": 120
+    }
+  },
+  "stats_slices": {
+    "claim1": {
+      "auc_owners": 0.7240740740740741,
+      "auc_with_miriam": 0.8385666666666667
+    },
+    "claim2": {
+      "acc_owners": 0.8583333333333333,
+      "chance_owners": 0.25,
+      "acc_with_miriam": 0.8866666666666667,
+      "chance_with_miriam": 0.2,
+      "ci_owners": [
+        0.7848035127258367,
+        0.9096319596840804
+      ],
+      "ci_with_miriam": [
+        0.8259959574322895,
+        0.9280263616283548
+      ]
+    },
+    "claim3": {
+      "owners": [
+        0.8583333333333333,
+        0.8166666666666667
+      ],
+      "with_miriam": [
+        0.8866666666666667,
+        0.8533333333333334
+      ]
+    }
+  }
+}

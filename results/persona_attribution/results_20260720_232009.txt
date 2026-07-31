@@ -1,0 +1,22 @@
+JUDGE EVALUATION RESULTS  —  20260720_232009
+judge: openai/gpt-5.4  temp=0.0  rubric=rubric_v2_locked
+======================================================================
+
+CLAIM 1 — pointwise persona scoring does not discriminate owners:
+  matched 4.33 vs mismatched 3.69 (separation +0.64)
+  Cliff's delta +0.448 [+0.370, +0.521] (medium); AUC 0.724
+  ABSTRACT SENTENCE: pointwise persona-consistency scoring did not separate a
+    response's true author from other owners (Cliff's delta +0.45, 95% CI [+0.37, +0.52]; AUC 0.72).
+
+CLAIM 2 — forced-choice attribution beats chance:
+  accuracy 87.5% (n=24) vs 25% chance
+  binomial p=2.0e-10, Wilson 95% CI [69.0%, 95.7%]; Miriam 100%
+  ABSTRACT SENTENCE: forced-choice attribution identified the true author well
+    above chance (88% vs 25%, 95% CI [69%, 96%], p<0.001).
+
+CLAIM 3 — removing memory does not change attribution:
+  Baseline 85.8% vs Ablation2 81.7% (Δ -4.2%)
+  McNemar p=0.458, paired Δ 95% CI [-14.2%, +6.7%] — no DETECTABLE difference (underpowered CI)
+  ABSTRACT SENTENCE: removing memory and reflection left attribution unchanged
+    (Δ -4%, 95% CI [-14%, +7%], McNemar p=0.46).
+  day-split interaction Mann-Whitney p=0.103 (noise, not a real interaction)

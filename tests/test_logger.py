@@ -1,7 +1,7 @@
 """
 Tests for SimulationLogger.
 
-Covers: all log methods, JSONL validity, lifecycle (write → summary → close),
+Covers: all log methods, JSONL validity, lifecycle (write -> summary -> close),
 entry ordering, flush-on-write, and the specific bug where run() closed the
 logger before log_run_summary() could be called.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 from src.output.logger import SimulationLogger
 
 
-# ── Fixtures ───────────────────────────────────────────────────────────────────
+# Fixtures
 
 @pytest.fixture
 def logger(tmp_path):
@@ -27,7 +27,7 @@ def read_jsonl(path: Path) -> list:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-# ── File creation ──────────────────────────────────────────────────────────────
+# File creation
 
 def test_log_file_created(tmp_path):
     lg = SimulationLogger(run_id="myrun", output_dir=str(tmp_path))
@@ -41,7 +41,7 @@ def test_log_path_attribute(tmp_path):
     assert lg.log_path == tmp_path / "myrun.jsonl"
 
 
-# ── log_run_config ─────────────────────────────────────────────────────────────
+# log_run_config
 
 def test_log_run_config_entry_type(logger, tmp_path):
     logger.log_run_config({"run_label": "test", "decision_model": "claude-sonnet-4-6"})
@@ -65,7 +65,7 @@ def test_log_run_config_tick_minus_one(logger, tmp_path):
     assert entries[0]["tick"] == -1
 
 
-# ── log_decision ───────────────────────────────────────────────────────────────
+# log_decision
 
 def test_log_decision_entry_type(logger, tmp_path):
     logger.log_decision(
@@ -115,7 +115,7 @@ def test_log_decision_retrieved_memories_serialised(logger, tmp_path):
     assert entry["retrieved_memories"][0]["description"] == "Saw fire trucks."
 
 
-# ── log_reflection ─────────────────────────────────────────────────────────────
+# log_reflection
 
 def test_log_reflection_entry_type(logger, tmp_path):
     from unittest.mock import MagicMock
@@ -140,7 +140,7 @@ def test_log_reflection_count(logger, tmp_path):
     assert len(entry["reflections"]) == 3
 
 
-# ── log_tick_summary ───────────────────────────────────────────────────────────
+# log_tick_summary
 
 def test_log_tick_summary_entry_type(logger, tmp_path):
     logger.log_tick_summary(tick=10, agent_states=[{"agent": "beth", "memory_count": 5}])
@@ -156,7 +156,7 @@ def test_log_tick_summary_tick_value(logger, tmp_path):
     assert entry["tick"] == 42
 
 
-# ── log_run_summary ────────────────────────────────────────────────────────────
+# log_run_summary
 
 def test_log_run_summary_entry_type(logger, tmp_path):
     logger.log_run_summary(latency_seconds=12.3, cost_info={"total_cost_usd": 0.05})
@@ -187,12 +187,12 @@ def test_log_run_summary_cost_fields_present(logger, tmp_path):
     assert entry["total_cost_usd"] == 0.03
 
 
-# ── THE BUG: log_run_summary after run() ──────────────────────────────────────
+# THE BUG: log_run_summary after run()
 
 def test_log_run_summary_callable_before_close(tmp_path):
     """
     Regression: run() used to close the logger internally, making this fail.
-    The notebook calls log_run_summary → close, so the file must still be open.
+    The notebook calls log_run_summary -> close, so the file must still be open.
     """
     lg = SimulationLogger(run_id="regression", output_dir=str(tmp_path))
     lg.log_run_config({"run_label": "test"})
@@ -212,7 +212,7 @@ def test_log_run_summary_callable_before_close(tmp_path):
     assert types[-1] == "run_summary"
 
 
-# ── Entry ordering and count ───────────────────────────────────────────────────
+# Entry ordering and count
 
 def test_entry_count_tracked(logger):
     logger.log_run_config({})
@@ -252,7 +252,7 @@ def test_notebook_sequence_entry_order(tmp_path):
     assert entries[-1]["entry_type"] == "run_summary"
 
 
-# ── Context manager ────────────────────────────────────────────────────────────
+# Context manager
 
 def test_context_manager_closes_file(tmp_path):
     with SimulationLogger(run_id="ctx", output_dir=str(tmp_path)) as lg:

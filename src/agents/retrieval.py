@@ -1,5 +1,5 @@
 """
-retrieval.py — Parameterised memory retrieval with configurable scoring.
+retrieval.py: Parameterised memory retrieval with configurable scoring.
 
 Implements Park et al. (2023)'s three-component retrieval formula:
     score = w_recency * recency + w_importance * importance + w_relevance * relevance
@@ -10,9 +10,9 @@ RetrievalConfig is the single place to change all retrieval hyperparameters.
 Pass different configs in the validation notebook to compare retrieval quality.
 
 retrieval_mode controls the relevance signal:
-  "dense"  — cosine similarity via sentence-transformer embeddings (default)
-  "sparse" — Jaccard token overlap (no extra dependencies; catches literal keyword matches)
-  "hybrid" — weighted combination of dense and sparse
+  "dense":  cosine similarity via sentence-transformer embeddings (default)
+  "sparse": Jaccard token overlap (no extra dependencies; catches literal keyword matches)
+  "hybrid": weighted combination of dense and sparse
 """
 
 from dataclasses import dataclass
@@ -23,11 +23,13 @@ if TYPE_CHECKING:
     from src.agents.memory import Memory, MemoryStream
 
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# Config
 
 @dataclass
 class RetrievalConfig:
-    top_k: int = 12
+    # Defaults are the configuration locked during agent validation and used in
+    # every reported run, so constructing RetrievalConfig() reproduces the experiment.
+    top_k: int = 8
     recency_weight: float = 1.0
     importance_weight: float = 1.0
     relevance_weight: float = 1.0
@@ -52,7 +54,7 @@ class RetrievalConfig:
         )
 
 
-# ── Internal scoring helpers ────────────────────────────────────────────────────
+# Internal scoring helpers
 
 def _minmax(arr: np.ndarray) -> np.ndarray:
     """Normalise array to [0, 1]. Returns 0.5 everywhere if all values are identical."""
@@ -90,7 +92,7 @@ def _sparse_relevance(query_text: str, memories: List["Memory"]) -> np.ndarray:
     return np.array(scores, dtype=float)
 
 
-# ── Main retrieval function ────────────────────────────────────────────────────
+# Main retrieval function
 
 def retrieve_memories(
     stream: "MemoryStream",
@@ -119,7 +121,7 @@ def retrieve_memories(
     if not memories:
         return []
 
-    # ── Recency ──────────────────────────────────────────────────────────────
+    # Recency
     # Use last_accessed if set (by prior retrievals), otherwise fall back to timestamp
     ages = np.array([
         current_day - (m.last_accessed if m.last_accessed is not None else m.timestamp)
@@ -127,10 +129,10 @@ def retrieve_memories(
     ], dtype=float)
     recency_raw = np.power(config.recency_decay, ages)
 
-    # ── Importance ───────────────────────────────────────────────────────────
+    # Importance
     importance_raw = np.array([m.importance for m in memories], dtype=float)
 
-    # ── Relevance ────────────────────────────────────────────────────────────
+    # Relevance
     if config.retrieval_mode == "dense":
         relevance_raw = _dense_relevance(query_embedding, memories)
     elif config.retrieval_mode == "sparse":
@@ -140,20 +142,20 @@ def retrieve_memories(
         sparse = _minmax(_sparse_relevance(query_text, memories))
         relevance_raw = (1 - config.sparse_weight) * dense + config.sparse_weight * sparse
 
-    # ── Normalise to [0, 1] ──────────────────────────────────────────────────
+    # Normalise to [0, 1]
     recency_norm    = _minmax(recency_raw)
     importance_norm = _minmax(importance_raw)
     # hybrid relevance is already normalised above
     relevance_norm  = _minmax(relevance_raw) if config.retrieval_mode != "hybrid" else relevance_raw
 
-    # ── Weighted combination ─────────────────────────────────────────────────
+    # Weighted combination
     scores = (
         config.recency_weight    * recency_norm
         + config.importance_weight * importance_norm
         + config.relevance_weight  * relevance_norm
     )
 
-    # ── Top-k ────────────────────────────────────────────────────────────────
+    # Top-k
     k = min(config.top_k, len(memories))
     top_indices = np.argsort(scores)[::-1][:k]
     top_memories = [memories[i] for i in top_indices]
@@ -165,7 +167,7 @@ def retrieve_memories(
     return top_memories
 
 
-# ── Debug helper ───────────────────────────────────────────────────────────────
+# Debug helper
 
 def pretty_print_retrieval(retrieved: List["Memory"], query_text: str):
     """Print retrieved memories for notebook inspection."""

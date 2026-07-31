@@ -1,21 +1,21 @@
 """
-channels.py — Channel-specific framing for simulation events.
+channels.py: Channel-specific framing for simulation events.
 
 The channel field on each event in the scenario YAML determines HOW the agent
 receives the information. The framing language matters because it shapes which
 memories the agent retrieves when processing the event:
 
-  official_mail   → formal, institutional language  → pulls institutional trust memories
-  news_media      → broadcast/third-person language → pulls general risk-awareness memories
-  social          → peer/neighbour observation      → pulls community and relationship memories
-  direct_experience → first-person sensory          → pulls personal history and emotional memories
+  official_mail   -> formal, institutional language  -> pulls institutional trust memories
+  news_media      -> broadcast/third-person language -> pulls general risk-awareness memories
+  social          -> peer/neighbour observation      -> pulls community and relationship memories
+  direct_experience -> first-person sensory          -> pulls personal history and emotional memories
 
-Channel framing is an environment concern, not a prompt-assembly concern — it lives here
+Channel framing is an environment concern, not a prompt-assembly concern, it lives here
 rather than in prompts.py.
 """
 
 
-# ── Channel framing templates ─────────────────────────────────────────────────
+# Channel framing templates
 # {content} is replaced with the raw event text from the scenario YAML.
 
 CHANNEL_FRAMES = {

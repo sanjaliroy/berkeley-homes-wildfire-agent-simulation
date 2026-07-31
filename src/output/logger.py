@@ -1,19 +1,19 @@
 """
-logger.py — Structured JSONL logging for simulation runs.
+logger.py: Structured JSONL logging for simulation runs.
 
 Writes one JSON object per line to a .jsonl file. Each entry has an entry_type
 field so you can filter by type when analysing results:
 
-  "decision"     — one per agent per event; contains all fields the judge needs
-  "reflection"   — fired when cumulative importance exceeds threshold
-  "tick_summary" — end-of-tick state snapshot for all agents
+  "decision":     one per agent per event; contains all fields the judge needs
+  "reflection":   fired when cumulative importance exceeds threshold
+  "tick_summary": end-of-tick state snapshot for all agents
 
 The four fields required for judge_simulation() calls are always present in
 every "decision" entry:
-  seed_personality   — the agent's full seed paragraph
-  intervention       — the exact event content (channel is also logged separately)
-  decision           — what the agent decided to do
-  reasoning          — why (the agent's internal logic)
+  seed_personality:   the agent's full seed paragraph
+  intervention:       the exact event content (channel is also logged separately)
+  decision:           what the agent decided to do
+  reasoning:          why (the agent's internal logic)
 """
 
 import json
@@ -47,7 +47,7 @@ class SimulationLogger:
 
         print(f"[logger] Run '{run_id}' → {self.log_path}")
 
-    # ── Primary log methods ────────────────────────────────────────────────────
+    # Primary log methods
 
     def log_decision(
         self,
@@ -76,12 +76,12 @@ class SimulationLogger:
             "agent_display_name": agent_display_name,
             "event_type": event_type,
             "channel": channel,
-            # ── Judge-required fields ──────────────────────────────────────────
+            # Judge-required fields
             "seed_personality": seed_personality,
             "intervention": intervention,
             "decision": decision,
             "reasoning": reasoning,
-            # ── Supporting context ─────────────────────────────────────────────
+            # Supporting context
             "retrieved_memories": [
                 {
                     "id": m.id,
@@ -104,7 +104,7 @@ class SimulationLogger:
         reflections: List["Memory"],
     ):
         """
-        Log a reflection event — fired when cumulative importance exceeds threshold.
+        Log a reflection event, fired when cumulative importance exceeds threshold.
         Reflections become high-importance memories that re-enter the retrieval stream.
         """
         entry = {
@@ -150,7 +150,7 @@ class SimulationLogger:
         Log end-of-run cost and latency as the final JSONL entry.
 
         latency_seconds: wall-clock time for the full simulation run.
-        cost_info: dict from UsageTracker.to_dict() — agent/judge token counts and costs.
+        cost_info: dict from UsageTracker.to_dict(), agent/judge token counts and costs.
         """
         entry = {
             "entry_type": "run_summary",
@@ -160,7 +160,7 @@ class SimulationLogger:
         }
         self._write(entry)
 
-    # ── Internal write ─────────────────────────────────────────────────────────
+    # Internal write
 
     def _write(self, entry: dict):
         """Serialise entry to JSON and append to the log file."""
@@ -168,7 +168,7 @@ class SimulationLogger:
         self._file.flush()   # flush after every write so partial runs are readable
         self._entry_count += 1
 
-    # ── Lifecycle ──────────────────────────────────────────────────────────────
+    # Lifecycle
 
     def close(self):
         self._file.close()

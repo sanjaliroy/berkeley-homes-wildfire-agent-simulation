@@ -1,11 +1,11 @@
 """
-prompts.py — Prompt assembly for agent cognition.
+prompts.py: Prompt assembly for agent cognition.
 
 Assembles the full LLM prompt from four components:
-  1. Seed narrative   — who the agent is (static, from YAML)
-  2. Retrieved memories — what the agent remembers (dynamic, from retrieval.py)
-  3. Current situation  — what just happened (the framed event)
-  4. Decision question  — what we're asking the agent to do
+  1. Seed narrative: who the agent is (static, from YAML)
+  2. Retrieved memories: what the agent remembers (dynamic, from retrieval.py)
+  3. Current situation: what just happened (the framed event)
+  4. Decision question: what we're asking the agent to do
 
 Following Park et al. (2023), the seed narrative comes first to anchor identity,
 then retrieved memories to provide context, then the situation, then the question.
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from src.agents.memory import Memory
 
 
-# ── System prompt assembly ─────────────────────────────────────────────────────
+# System prompt assembly
 
 def build_system_prompt(seed_narrative: str, retrieved_memories: List["Memory"]) -> str:
     """
@@ -49,7 +49,7 @@ def build_system_prompt(seed_narrative: str, retrieved_memories: List["Memory"])
     return "\n".join(parts)
 
 
-# ── User prompt (decision question) ───────────────────────────────────────────
+# User prompt (decision question)
 
 def build_decision_prompt(situation: str, decision_question: str) -> str:
     """
@@ -72,14 +72,14 @@ def build_decision_prompt(situation: str, decision_question: str) -> str:
     )
 
 
-# ── Event framing ──────────────────────────────────────────────────────────────
-# Framing logic lives in channels.py — imported here for backwards compatibility
+# Event framing
+# Framing logic lives in channels.py, imported here for backwards compatibility
 # so any code that calls prompts.frame_event() still works.
 
 from src.environment.channels import frame_event, CHANNEL_FRAMES  # noqa: F401
 
 
-# ── Standard decision question ─────────────────────────────────────────────────
+# Standard decision question
 
 DECISION_QUESTION = (
 
@@ -90,7 +90,7 @@ DECISION_QUESTION = (
     Aim for 2-4 sentences. Do not over-explain or elaborate beyond what feels natural to say out loud."""
 )
 
-# ── Importance scoring prompt ──────────────────────────────────────────────────
+# Importance scoring prompt
 
 def build_importance_question(description: str) -> str:
     """
@@ -100,7 +100,7 @@ def build_importance_question(description: str) -> str:
     return f"How important is this event to you? '{description}'"
 
 
-# ── Reflection prompt ──────────────────────────────────────────────────────────
+# Reflection prompt
 
 REFLECTION_QUESTION = (
     "Based on your recent memories listed above, what higher-level belief or insight "
@@ -109,7 +109,7 @@ REFLECTION_QUESTION = (
 )
 
 
-# ── Debug helper ───────────────────────────────────────────────────────────────
+# Debug helper
 
 def pretty_print_prompt(system_prompt: str, user_prompt: str):
     """Print the full assembled prompt for inspection in the prototype notebook."""

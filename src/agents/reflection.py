@@ -1,11 +1,11 @@
 """
-reflection.py — Periodic belief synthesis via two-step reflection.
+reflection.py: Periodic belief synthesis via two-step reflection.
 
 Implements Park et al. (2023)'s reflection process:
-  Step 1 — Generate N high-level questions from recent memories.
+  Step 1, Generate N high-level questions from recent memories.
             ("What is Margaret most concerned about right now?")
-  Step 2 — For each question, retrieve relevant memories and synthesise an insight.
-            ("I am increasingly worried that insurance feels arbitrary — memories 2, 5, 8 show...")
+  Step 2, For each question, retrieve relevant memories and synthesise an insight.
+            ("I am increasingly worried that insurance feels arbitrary, memories 2, 5, 8 show...")
 
 Reflection fires when cumulative importance of unprocessed memories exceeds a threshold.
 Each insight is stored as a first-class 'reflection' memory in the agent's stream.
@@ -22,18 +22,20 @@ if TYPE_CHECKING:
     from src.llm.client import Config
 
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# Config
 
 @dataclass
 class ReflectionConfig:
-    threshold: float = 100.0           # cumulative importance that triggers reflection
+    # Defaults are the configuration locked during agent validation and used in
+    # every reported run, so constructing ReflectionConfig() reproduces the experiment.
+    threshold: float = 50.0            # cumulative importance that triggers reflection
     num_questions: int = 3             # questions to generate (Park et al. used 3)
     memories_for_questions: int = 10   # recent memories fed to question generator
     top_k_per_question: int = 8        # memories retrieved per question for synthesis
     reflection_importance: int = 8     # importance assigned to stored reflection memories
 
 
-# ── Step 1: question generation ────────────────────────────────────────────────
+# Step 1: question generation
 
 def _generate_questions(
     client_anthropic,
@@ -79,7 +81,7 @@ def _generate_questions(
     return lines[:reflection_config.num_questions]
 
 
-# ── Step 2: insight synthesis ──────────────────────────────────────────────────
+# Step 2: insight synthesis
 
 def _synthesise_insight(
     client_anthropic,
@@ -125,7 +127,7 @@ def _synthesise_insight(
     )
 
 
-# ── Main reflection function ────────────────────────────────────────────────────
+# Main reflection function
 
 def maybe_reflect(
     stream: "MemoryStream",

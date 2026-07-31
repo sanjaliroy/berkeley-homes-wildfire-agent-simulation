@@ -1,5 +1,5 @@
 """
-memory.py — Agent memory stream.
+memory.py: Agent memory stream.
 
 Implements the MemoryStream class following Park et al. (2023)'s Generative Agents architecture.
 Each Memory object stores:
@@ -17,7 +17,7 @@ from typing import List, Optional
 import numpy as np
 
 
-# ── Memory types ──────────────────────────────────────────────────────────────
+# Memory types
 MEMORY_TYPES = {"observation", "decision", "reflection", "conversation", "direct_experience"}
 
 
@@ -66,7 +66,7 @@ class MemoryStream:
     """
     Append-only memory stream for a single agent.
 
-    Agents never forget — retrieval controls what surfaces at decision time.
+    Agents never forget, retrieval controls what surfaces at decision time.
     The stream grows throughout the simulation.
     """
 
@@ -74,7 +74,7 @@ class MemoryStream:
         self.agent_name = agent_name
         self._memories: List[Memory] = []
 
-    # ── Write ──────────────────────────────────────────────────────────────────
+    # Write
 
     def add(
         self,
@@ -108,7 +108,7 @@ class MemoryStream:
         self._memories.append(memory)
         return memory
 
-    # ── Read ───────────────────────────────────────────────────────────────────
+    # Read
 
     def get_all(self) -> List[Memory]:
         """Return all memories in chronological order."""
@@ -133,7 +133,7 @@ class MemoryStream:
         """Total number of memories in the stream."""
         return len(self._memories)
 
-    # ── Seed ───────────────────────────────────────────────────────────────────
+    # Seed
 
     def load_seeds(
         self,
@@ -178,7 +178,7 @@ class MemoryStream:
 
         print(f"[memory] Done. Stream has {self.count()} memories.\n")
 
-    # ── Inspect ────────────────────────────────────────────────────────────────
+    # Inspect
 
     def pretty_print(self, n: Optional[int] = None):
         """Print memories in a readable format for notebook inspection."""

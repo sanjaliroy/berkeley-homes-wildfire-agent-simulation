@@ -1,12 +1,12 @@
 """
-simulation.py — Tick-based simulation loop.
+simulation.py: Tick-based simulation loop.
 
 Thin orchestrator: per tick it asks the scheduler for due events, routes each
 event to the right agents (by display_name or 'all'), runs the full cognition
 cycle, and logs everything.
 
 All heavy cognition logic lives in agent.py. simulation.py just coordinates:
-    scheduler → channels → agents → logger
+    scheduler -> channels -> agents -> logger
 
 SimulationConfig is the single place to set the scenario, agents, models, and
 ablation flags for one run. The notebook creates a SimulationConfig, passes it
@@ -26,12 +26,12 @@ from src.llm.client import Config
 from src.output.logger import SimulationLogger
 
 
-# ── Run configuration ─────────────────────────────────────────────────────────
+# Run configuration
 
 @dataclass
 class SimulationConfig:
     """
-    All knobs for one simulation run — create one of these in the notebook
+    All knobs for one simulation run, create one of these in the notebook
     and pass it to Simulation().
 
     The agent_yaml_paths list controls which agents are loaded. Each path
@@ -39,9 +39,9 @@ class SimulationConfig:
     memory_seeds fields (same format as beth.yaml / eleanor_v2.yaml).
 
     Ablation variants (Experiment 1):
-        Variant 1: use_memory=True,  use_reflection=True  — Full system
-        Variant 2: use_memory=True,  use_reflection=False — Memory + retrieval, no reflection
-        Variant 3: use_memory=False, use_reflection=False — Seed personality only (no memory, retrieval, or reflection)
+        Variant 1: use_memory=True,  use_reflection=True , Full system
+        Variant 2: use_memory=True,  use_reflection=False, Memory + retrieval, no reflection
+        Variant 3: use_memory=False, use_reflection=False, Seed personality only (no memory, retrieval, or reflection)
 
     run_label is the human-readable name used in evaluation exports, e.g.:
         "Premium_Full", "Baseline_Full", "Baseline_No_Reflection",
@@ -97,15 +97,15 @@ class SimulationConfig:
         )
 
 
-# ── Simulation ────────────────────────────────────────────────────────────────
+# Simulation
 
 class Simulation:
     """
     Runs the tick loop and coordinates agents, scheduler, and logger.
 
     Two ways to run from the notebook:
-        sim.run()     — full run, prints a summary after each event-filled tick
-        sim.step()    — advance exactly one day; returns the tick result dict
+        sim.run()    , full run, prints a summary after each event-filled tick
+        sim.step()   , advance exactly one day; returns the tick result dict
                         (use this for step-by-step inspection in the notebook)
 
     After the run, sim.tick_results holds every tick result in memory for
@@ -129,7 +129,7 @@ class Simulation:
         # Scheduler reads the scenario YAML
         self.scheduler = EventScheduler(sim_config.scenario_path)
 
-        # Load agents — keyed by display_name for target_agents matching
+        # Load agents, keyed by display_name for target_agents matching
         self.agents: Dict[str, Agent] = {}
         for yaml_path in sim_config.agent_yaml_paths:
             agent = Agent(
@@ -171,15 +171,15 @@ class Simulation:
         print(f"  Duration: {self.scheduler.duration_days} days")
         print(f"{'='*60}\n")
 
-    # ── Event routing ─────────────────────────────────────────────────────────
+    # Event routing
 
     def _resolve_targets(self, target_agents) -> List[Agent]:
         """
         Map the target_agents field from the scenario YAML to loaded Agent objects.
 
-        'all'  → every loaded agent
-        'Name' → the agent whose display_name matches (case-sensitive)
-        'A, B' → multiple agents by display_name
+        'all'  -> every loaded agent
+        'Name' -> the agent whose display_name matches (case-sensitive)
+        'A, B' -> multiple agents by display_name
         """
         target_str = str(target_agents).strip()
         if target_str.lower() == "all":
@@ -197,7 +197,7 @@ class Simulation:
                 )
         return targets
 
-    # ── Tick execution ────────────────────────────────────────────────────────
+    # Tick execution
 
     def step(self) -> Optional[dict]:
         """
@@ -235,7 +235,7 @@ class Simulation:
             }
 
             for agent in targets:
-                # Full cognition cycle — perceive → retrieve → decide → store → reflect
+                # Full cognition cycle, perceive -> retrieve -> decide -> store -> reflect
                 result = agent.run_cognition_cycle(event.__dict__, tick)
 
                 # Write decision entry to JSONL
@@ -302,7 +302,7 @@ class Simulation:
         self.logger.close()
 
 
-# ── Display helpers ───────────────────────────────────────────────────────────
+# Display helpers
 
 def _print_tick_summary(tick_result: dict):
     """Print a readable summary of one tick — used by run() verbose mode."""

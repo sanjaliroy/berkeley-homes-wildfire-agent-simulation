@@ -1,0 +1,30 @@
+# Simulating Wildfire Mitigation — pinned dependencies
+#
+# Requires Python >= 3.10 (developed and run on 3.10.11).
+# Install:  pip install -r requirements.txt
+#
+# Versions are pinned to those used for the published runs. Relax to >= only if
+# you are deliberately testing against newer releases.
+
+# --- LLM providers (all stages) ---
+anthropic==0.72.0             # Claude models, direct SDK
+openai==2.45.0                # OpenRouter (OpenAI-compatible) for non-Claude models
+
+# --- Core numerics + config (all stages) ---
+numpy==2.2.6
+PyYAML==6.0.3                 # agent and scenario configs
+
+# --- Retrieval embeddings (03_run_simulation) ---
+# Pulls in torch and transformers; this is the heaviest dependency by far.
+sentence-transformers==5.3.0  # local all-MiniLM-L6-v2 embeddings, no API key needed
+
+# --- Analysis and export (04/05/06 evaluation and judge validation) ---
+pandas==2.3.0
+scipy==1.15.3                 # Welch's t, Dunnett correction, Wilson CIs
+openpyxl==3.1.5               # scored Excel workbook export
+
+# --- Interview preprocessing (01/02 only) ---
+python-docx==1.2.0            # reads data/interview_transcripts/*.docx
+
+# --- Tests ---
+pytest==9.1.1

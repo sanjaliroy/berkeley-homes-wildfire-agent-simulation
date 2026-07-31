@@ -1,5 +1,5 @@
 """
-agent.py — Agent class: the full Park et al. (2023) cognition cycle for one homeowner.
+agent.py: the full Park et al. (2023) cognition cycle for one homeowner.
 
 Each Agent wraps:
   - A MemoryStream (append-only, grows through the simulation)
@@ -8,12 +8,12 @@ Each Agent wraps:
   - Decision-making (LLM call via client.py, structured JSON output)
 
 The cognition cycle per event is:
-    perceive → retrieve → decide → store → maybe_reflect
+    perceive -> retrieve -> decide -> store -> maybe_reflect
 
 Ablation flags let you disable memory and/or reflection for Experiment 1:
-    use_memory=False      → agent gets no retrieved memories (Variant 3)
-    use_reflection=False  → reflection step is skipped (Variant 2)
-    Both True             → full system (Variant 1)
+    use_memory=False      -> agent gets no retrieved memories (Variant 3)
+    use_reflection=False  -> reflection step is skipped (Variant 2)
+    Both True             -> full system (Variant 1)
 """
 
 import json
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     import numpy as np
     from src.agents.memory import Memory
 
-# Memory types allowed by MemoryStream — used to sanitise YAML seeds
+# Memory types allowed by MemoryStream, used to sanitise YAML seeds
 _VALID_MEMORY_TYPES = {"observation", "decision", "reflection", "conversation"}
 
 
@@ -50,8 +50,8 @@ class Agent:
         llm_config:         Config dataclass controlling which models to use.
         retrieval_config:   RetrievalConfig (top-K weights etc.). Defaults applied if None.
         reflection_config:  ReflectionConfig (threshold, num_questions). Defaults if None.
-        use_memory:         Ablation flag — False disables retrieval (Experiment 1 Variant 3).
-        use_reflection:     Ablation flag — False disables reflection (Experiment 1 Variant 2).
+        use_memory:         Ablation flag, False disables retrieval (Experiment 1 Variant 3).
+        use_reflection:     Ablation flag, False disables reflection (Experiment 1 Variant 2).
         client_openrouter:  Optional OpenRouter client for non-Claude models.
     """
 
@@ -81,7 +81,7 @@ class Agent:
         self.seed_narrative: str = data["seed_narrative"]
         self._raw_data: dict = data   # kept for reference (persona, key_concerns etc.)
 
-        # Runtime state — updated as the simulation progresses
+        # Runtime state, updated as the simulation progresses
         self.memory = MemoryStream(agent_name=self.id)
         self._last_reflection_index: int = 0   # tracks where last reflection ended
         self.compliance_status: str = data.get("compliance_status", "unknown")
@@ -91,7 +91,7 @@ class Agent:
         # Seed memory stream from YAML
         self._load_seeds(data.get("memory_seeds", []))
 
-    # ── Initialisation ────────────────────────────────────────────────────────
+    # Initialisation
 
     def _load_seeds(self, seeds: List[dict]):
         """
@@ -110,7 +110,7 @@ class Agent:
         for seed in seeds:
             description = seed["description"]
 
-            # Sanitise memory type — 'direct_experience' etc. are source fields, not types
+            # Sanitise memory type, 'direct_experience' etc. are source fields, not types
             raw_type = seed.get("type", "observation")
             memory_type = raw_type if raw_type in _VALID_MEMORY_TYPES else "observation"
 
@@ -132,7 +132,7 @@ class Agent:
 
         print(f"[{self.id}] Done — {self.memory.count()} memories seeded.\n")
 
-    # ── Cognition cycle ───────────────────────────────────────────────────────
+    # Cognition cycle
 
     def perceive(self, event: dict) -> Tuple[str, "np.ndarray", str]:
         """
@@ -143,9 +143,9 @@ class Agent:
         than the framed text so the semantic query isn't skewed by framing words.
 
         Returns:
-            situation    — framed text passed to the decision prompt
-            query_embed  — embedding of the raw content (for retrieval)
-            query_text   — raw content (for sparse/hybrid retrieval)
+            situation:    framed text passed to the decision prompt
+            query_embed:  embedding of the raw content (for retrieval)
+            query_text:   raw content (for sparse/hybrid retrieval)
         """
         situation = frame_event(event["channel"], event["content"])
         query_text = event["content"]
@@ -161,7 +161,7 @@ class Agent:
         """
         Return the top-K most relevant memories for this query.
 
-        Returns an empty list if use_memory=False (ablation Variant 3 — the agent
+        Returns an empty list if use_memory=False (ablation Variant 3, the agent
         gets only its seed personality, no episodic context).
         """
         if not self.use_memory:
@@ -176,7 +176,7 @@ class Agent:
 
         Expects JSON: {"decision": "...", "reasoning": "..."}.
         If parsing fails (model didn't follow the format), the whole response
-        is stored as reasoning with an empty decision — so nothing is lost.
+        is stored as reasoning with an empty decision, so nothing is lost.
         """
         text = raw.strip()
         # Strip markdown code fences if present
@@ -208,8 +208,8 @@ class Agent:
         independently and so the JSONL log captures both cleanly.
 
         Returns:
-            decision  — what the agent does (actions, calls, choices)
-            reasoning — why (internal logic, feelings, memories that shaped it)
+            decision:  what the agent does (actions, calls, choices)
+            reasoning: why (internal logic, feelings, memories that shaped it)
         """
         system_prompt = build_system_prompt(self.seed_narrative, retrieved_memories)
 
@@ -283,23 +283,23 @@ class Agent:
 
     def run_cognition_cycle(self, event: dict, current_day: int) -> dict:
         """
-        Run the full perceive → retrieve → decide → store → reflect cycle.
+        Run the full perceive -> retrieve -> decide -> store -> reflect cycle.
 
         This is called once per event per targeted agent by simulation.py.
 
         Returns a structured result dict that simulation.py passes directly to
-        the logger — every field needed for logging and judge scoring is here.
+        the logger, every field needed for logging and judge scoring is here.
         """
-        # 1. Perceive — frame the event and embed the content
+        # 1. Perceive, frame the event and embed the content
         situation, query_embed, query_text = self.perceive(event)
 
-        # 2. Retrieve — top-K relevant memories (empty if use_memory=False)
+        # 2. Retrieve, top-K relevant memories (empty if use_memory=False)
         retrieved = self.retrieve(query_embed, query_text, current_day)
 
-        # 3. Decide — call LLM, parse into decision + reasoning
+        # 3. Decide, call LLM, parse into decision + reasoning
         decision, reasoning = self.make_decision(situation, retrieved)
 
-        # 4. Store — record what happened (observation) and what was decided
+        # 4. Store, record what happened (observation) and what was decided
         obs_mem = self.store(
             description=f"[Day {current_day}] {event['channel']}: {event['content']}",
             memory_type="observation",
@@ -315,7 +315,7 @@ class Agent:
         if decision:
             self.actions_taken.append(decision)
 
-        # 5. Reflect — fires only if cumulative importance exceeds threshold
+        # 5. Reflect, fires only if cumulative importance exceeds threshold
         new_reflections = self.maybe_reflect(current_day)
 
         return {
@@ -330,7 +330,7 @@ class Agent:
             "new_reflections": new_reflections,
         }
 
-    # ── State inspection ──────────────────────────────────────────────────────
+    # State inspection
 
     def state_snapshot(self) -> dict:
         """
@@ -361,7 +361,7 @@ class Agent:
         print(f"{'='*60}\n")
 
 
-# ── YAML loading helper ───────────────────────────────────────────────────────
+# YAML loading helper
 
 def _load_agent_yaml(yaml_path: str) -> dict:
     """

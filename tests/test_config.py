@@ -1,21 +1,22 @@
 """
 Tests for Config defaults, model pricing, and UsageTracker.
 
-No LLM calls — purely unit tests against static values and arithmetic.
+No LLM calls, purely unit tests against static values and arithmetic.
 """
 
 import pytest
 from src.llm.client import Config, UsageTracker, MODEL_PRICING
 
 
-# ── Config defaults ────────────────────────────────────────────────────────────
+# Config defaults
 
 def test_default_decision_model():
     assert Config().DECISION_MODEL == "claude-sonnet-4-6"
 
 
-def test_default_reflection_model_is_haiku():
-    assert Config().REFLECTION_MODEL == "claude-haiku-4-5-20251001"
+def test_default_reflection_model_matches_decision_model():
+    # Defaults reproduce the reported Baseline, which used one model for both.
+    assert Config().REFLECTION_MODEL == Config().DECISION_MODEL == "claude-sonnet-4-6"
 
 
 def test_default_judge_model_is_opus():
@@ -48,13 +49,13 @@ def test_config_override_decision_model():
 
 
 def test_config_override_reflection_model():
-    cfg = Config(REFLECTION_MODEL="claude-sonnet-4-6")
-    assert cfg.REFLECTION_MODEL == "claude-sonnet-4-6"
+    cfg = Config(REFLECTION_MODEL="claude-haiku-4-5-20251001")
+    assert cfg.REFLECTION_MODEL == "claude-haiku-4-5-20251001"
 
 
 def test_config_override_does_not_affect_defaults():
     cfg = Config(DECISION_MODEL="claude-haiku-4-5-20251001")
-    assert cfg.REFLECTION_MODEL == "claude-haiku-4-5-20251001"  # default unchanged
+    assert cfg.REFLECTION_MODEL == "claude-sonnet-4-6"  # default unchanged
 
 
 def test_config_concise_output_override():
@@ -62,7 +63,7 @@ def test_config_concise_output_override():
     assert cfg.CONCISE_OUTPUT is True
 
 
-# ── Model pricing ──────────────────────────────────────────────────────────────
+# Model pricing
 
 def test_sonnet_pricing():
     assert MODEL_PRICING["claude-sonnet-4-6"] == (3.00, 15.00)
@@ -90,7 +91,7 @@ def test_all_pricing_entries_are_floats():
         assert isinstance(out, float), f"{model} output price not float"
 
 
-# ── UsageTracker ───────────────────────────────────────────────────────────────
+# UsageTracker
 
 def test_tracker_starts_at_zero():
     t = UsageTracker()

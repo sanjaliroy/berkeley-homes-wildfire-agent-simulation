@@ -1,8 +1,8 @@
 """
-Tests for Simulation lifecycle — no LLM calls.
+Tests for Simulation lifecycle, no LLM calls.
 
-Patches Agent and EventScheduler so we can exercise the run() → log_run_summary()
-→ close() sequence that was broken, plus SimulationConfig behaviour.
+Patches Agent and EventScheduler so we can exercise the run() -> log_run_summary()
+-> close() sequence that was broken, plus SimulationConfig behaviour.
 
 The core invariant: run() must NOT close the logger. The notebook owns the
 logger lifecycle: it calls log_run_summary() then close() after run() returns.
@@ -16,7 +16,7 @@ from src.agents.retrieval import RetrievalConfig
 from src.agents.reflection import ReflectionConfig
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# Helpers
 
 def _fake_cognition_result(agent_id="test_agent", display_name="TestAgent"):
     return {
@@ -92,7 +92,7 @@ def _make_simulation(tmp_path, duration_days=2, with_event=False):
     return sim
 
 
-# ── SimulationConfig ───────────────────────────────────────────────────────────
+# SimulationConfig
 
 def test_run_id_auto_generated():
     cfg = SimulationConfig(
@@ -155,7 +155,7 @@ def test_describe_contains_model_names():
     assert "claude-haiku-4-5-20251001" in desc
 
 
-# ── Logger lifecycle — THE BUG ─────────────────────────────────────────────────
+# Logger lifecycle, THE BUG
 
 def test_run_does_not_close_logger(tmp_path):
     """run() must not close the logger — notebook calls log_run_summary() afterwards."""
@@ -193,7 +193,7 @@ def test_run_summary_appears_in_jsonl(tmp_path):
     assert summary["total_cost_usd"] == 0.54
 
 
-# ── run() tick loop ────────────────────────────────────────────────────────────
+# run() tick loop
 
 def test_run_returns_tick_results(tmp_path):
     sim = _make_simulation(tmp_path, duration_days=3)
@@ -246,7 +246,7 @@ def test_step_logs_tick_summary(tmp_path):
     assert len(tick_summaries) > 0
 
 
-# ── run_config logged at init ──────────────────────────────────────────────────
+# run_config logged at init
 
 def test_run_config_logged_on_init(tmp_path):
     import json

@@ -1,21 +1,20 @@
 """
-client.py — LLM API interaction layer.
+client.py: LLM API interaction layer.
 
 Supports two providers:
-  - Anthropic (direct SDK) — for Claude models
-  - OpenRouter (OpenAI-compatible SDK) — for GPT-4o, DeepSeek-R1, Llama, Mistral, etc.
-    Also supports Claude via OpenRouter if preferred.
+  - Anthropic (direct SDK) for Claude models
+  - OpenRouter (OpenAI-compatible SDK) for GPT, DeepSeek, Llama, Mistral and others.
+    Claude is also reachable via OpenRouter if preferred.
 
-Routing is automatic based on model name:
-  - Model starts with "claude-"  → Anthropic SDK
-  - Anything else               → OpenRouter (openai SDK with custom base_url)
+Routing is automatic, based on model name:
+  - Model starts with "claude-"  -> Anthropic SDK
+  - Anything else               -> OpenRouter (openai SDK with custom base_url)
 
 Setup:
   client_anthropic  = init_clients()             # always call this
-  client_openrouter = init_openrouter_client()   # optional; only needed for non-Claude models
+  client_openrouter = init_openrouter_client()   # optional; only for non-Claude models
 
-In the notebook, all functions accept client_openrouter=None as an optional arg.
-prototype-2.ipynb works unchanged — it never passes client_openrouter.
+All functions accept client_openrouter=None, so callers that only use Claude can omit it.
 
 Config pattern adapted from course studio notebooks (Cornelia Paulik, INFO 290).
 Embedding model: all-MiniLM-L6-v2 (HuggingFace, free, no API key needed).
@@ -35,7 +34,7 @@ from typing import List, Optional
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-# ── Model pricing (USD per million tokens) ─────────────────────────────────────
+# Model pricing (USD per million tokens)
 # Sources: https://platform.claude.com/docs/en/about-claude/pricing and
 # https://openrouter.ai/<model> pages (verified 10 Jul 2026)
 MODEL_PRICING = {
@@ -49,37 +48,38 @@ MODEL_PRICING = {
 }
 
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# Config
 
 @dataclass
 class Config:
-    # ── Agent decision model ──────────────────────────────────────────────────
+    # Agent decision model
     # Anthropic:   "claude-sonnet-4-6", "claude-haiku-4-5-20251001"
     # OpenRouter:  "moonshotai/kimi-k2.6", "openai/gpt-4o", "deepseek/deepseek-r1"
     DECISION_MODEL: str = "claude-sonnet-4-6"
     DECISION_MAX_TOKENS: int = 1024
     DECISION_TEMPERATURE: float = 0.7
 
-    # ── Reflection model (higher reasoning quality; Opus recommended) ─────────
-    REFLECTION_MODEL: str = "claude-haiku-4-5-20251001"
+    # Reflection model. Defaults to the decision model so that Config() reproduces
+    # the reported Baseline; the run matrix overrides both per condition.
+    REFLECTION_MODEL: str = "claude-sonnet-4-6"
     REFLECTION_MAX_TOKENS: int = 512
     REFLECTION_QUESTION_MAX_TOKENS: int = 2048
     REFLECTION_TEMPERATURE: float = 0.4
 
-    # ── LLM-as-judge model (evaluation only; keep strong + deterministic) ─────
+    # LLM-as-judge model (evaluation only; keep strong + deterministic)
     JUDGE_MODEL: str = "claude-opus-4-6"
     JUDGE_MAX_TOKENS: int = 1024
-    JUDGE_TEMPERATURE: float = 0.0   # deterministic → reproducible eval scores
+    JUDGE_TEMPERATURE: float = 0.0   # deterministic -> reproducible eval scores
 
-    # ── Importance scoring ────────────────────────────────────────────────────
+    # Importance scoring
     IMPORTANCE_MAX_TOKENS: int = 5
     IMPORTANCE_TEMPERATURE: float = 0.0
 
-    # ── Embeddings (always local HuggingFace — no provider needed) ───────────
+    # Embeddings (always local HuggingFace, no provider needed)
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     EMBEDDING_DIM: int = 384
 
-    # ── Output verbosity ──────────────────────────────────────────────────────
+    # Output verbosity
     # When True, injects a conciseness instruction into every decide() call.
     # Set to True for evaluation runs to keep logged decision/reasoning readable.
     CONCISE_OUTPUT: bool = False
@@ -88,7 +88,7 @@ class Config:
 config = Config()
 
 
-# ── Usage tracking ─────────────────────────────────────────────────────────────
+# Usage tracking
 
 @dataclass
 class UsageTracker:
@@ -142,7 +142,7 @@ class UsageTracker:
         }
 
 
-# Module-level tracker — reset before each run, read after
+# Module-level tracker, reset before each run, read after
 usage_tracker = UsageTracker()
 
 # Per-run tracker override. Parallel runs share the module-level tracker and would
@@ -177,7 +177,7 @@ def _get_tracker() -> UsageTracker:
 _embedding_model = None
 
 
-# ── Client initialisation ──────────────────────────────────────────────────────
+# Client initialisation
 
 def init_clients():
     """
@@ -208,7 +208,7 @@ def init_openrouter_client():
     Only needed when using non-Claude models (GPT-4o, DeepSeek, Llama, etc.).
 
     Requires OPENROUTER_API_KEY in Colab secrets or environment variables.
-    Get a key at openrouter.ai — pay-per-use, no subscription needed.
+    Get a key at openrouter.ai, pay-per-use, no subscription needed.
 
     Returns an openai.OpenAI client pointed at OpenRouter's API.
     """
@@ -236,7 +236,7 @@ def init_openrouter_client():
     return client
 
 
-# ── Internal routing ───────────────────────────────────────────────────────────
+# Internal routing
 
 def _is_anthropic_model(model: str) -> bool:
     """Claude models go to Anthropic SDK; everything else goes to OpenRouter."""
@@ -251,7 +251,7 @@ def _call_llm(
     temperature: float,
     client_anthropic,
     client_openrouter=None,
-    call_type: str = "agent",   # "agent" | "judge" — controls usage_tracker bucket
+    call_type: str = "agent",   # "agent" | "judge", controls usage_tracker bucket
 ) -> str:
     """
     Internal routing function. All LLM calls go through here.
@@ -309,7 +309,7 @@ def _call_llm(
         return content or ""
 
 
-# ── Embedding ──────────────────────────────────────────────────────────────────
+# Embedding
 
 def _get_embedding_model():
     global _embedding_model
@@ -329,7 +329,7 @@ def embed(text: str) -> np.ndarray:
     return vector.astype(np.float32)
 
 
-# ── Agent calls ────────────────────────────────────────────────────────────────
+# Agent calls
 
 _CONCISE_SUFFIX = (
     "\n\nIMPORTANT: Keep both the decision and reasoning fields concise "
@@ -341,7 +341,7 @@ def decide(client_anthropic, system_prompt: str, user_prompt: str, client_openro
            llm_config: "Config" = None) -> str:
     """
     Routine agent decision call.
-    Uses llm_config.DECISION_MODEL when passed (per-run config — required for
+    Uses llm_config.DECISION_MODEL when passed (per-run config, required for
     parallel runs with different models); falls back to the module-level config.
     When CONCISE_OUTPUT is True, injects a brevity instruction into the prompt.
     """
@@ -422,7 +422,7 @@ def score_importance(client_anthropic, description: str, agent_seed: str, max_re
     return 5
 
 
-# ── Evaluation calls ───────────────────────────────────────────────────────────
+# Evaluation calls
 
 def judge_retrieval(client_anthropic, config: Config, all_memories, intervention: str, retrieved_memories, client_openrouter=None) -> dict:
     """
@@ -541,7 +541,7 @@ def judge_intervention(
     LLM-as-judge for a single agent intervention response.
 
     Scores on three 1–5 dimensions (Park et al. 2023 / Liu et al. 2023).
-    Judge receives the full seed_narrative AND memory seeds — matching the level
+    Judge receives the full seed_narrative AND memory seeds, matching the level
     of context that Park et al.'s human raters had when inspecting memory streams.
 
     Returns dict with per-criterion scores and 1–2 sentence notes explaining each.
@@ -641,7 +641,7 @@ def judge_full_simulation(
 
     Unlike judge_intervention() which scores one event at a time, this function
     receives the full sequence of all interventions and responses and gives a
-    single holistic score for each criterion — capturing trajectory-level
+    single holistic score for each criterion, capturing trajectory-level
     patterns that per-event scoring cannot.
 
     Args:
@@ -766,7 +766,7 @@ def judge_pairwise(
 
     Absolute 1-5 scoring saturates on this task (the judge parks at 4-5 regardless of
     condition), so it cannot resolve the ablation contrasts. Pairwise only asks the judge
-    to detect a *difference*, never to locate an absolute point on a scale — and because
+    to detect a *difference*, never to locate an absolute point on a scale, and because
     both trajectories share one seed, per-resident difficulty cancels out.
 
     The caller is responsible for randomising which condition is A and which is B, and
@@ -869,7 +869,7 @@ def judge_simulation(
     )
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# Helpers
 
 def _strip_fences(text: str) -> str:
     """Strip markdown code fences from LLM JSON responses."""

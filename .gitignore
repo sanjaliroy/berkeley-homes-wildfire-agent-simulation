@@ -1,9 +1,17 @@
-outputs/               # working dir: run JSONLs + generated eval workbooks
-data/embeddings_cache/ # cached embeddings
+# Working directory for new runs — curated results live in results/
+outputs/
+data/embeddings_cache/   # cached embeddings
+
+# Python / editor / OS cruft
 __pycache__/
-.DS_Store
 *.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+
+# Local working notes and superseded material, not part of the publication
 System Design and Notes/
+archive/
 excalidraw.log
 memory/
 

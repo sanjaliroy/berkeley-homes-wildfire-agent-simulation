@@ -1,10 +1,9 @@
 """
-Preview test for run_evaluation_v2.ipynb — no LLM calls.
+Preview test for 04_run_evaluation.ipynb, no LLM calls.
 
 Executes the notebook's actual statistics, table, and Excel-export cells against
-synthetic judge scores, and writes a sample workbook to:
-
-    outputs/eval/evaluation_v2_claude_SAMPLE.xlsx
+synthetic judge scores, and writes a sample workbook to a pytest tmp directory —
+never into results/, which holds the curated evaluation artifacts.
 
 Run it any time you change the evaluation notebook to check the output shape:
 
@@ -22,7 +21,7 @@ pytest.importorskip("openpyxl")
 pytest.importorskip("scipy")
 
 PROJECT = Path(__file__).resolve().parents[1]
-NOTEBOOK = PROJECT / "notebooks" / "run_evaluation_v2.ipynb"
+NOTEBOOK = PROJECT / "notebooks" / "04_run_evaluation.ipynb"
 
 DIMS = ["behavioral_plausibility", "persona_consistency", "intervention_responsiveness"]
 VARIANTS = ["Baseline", "Ablation1_No_Reflection", "Ablation2_No_Memory_No_Reflection", "Budget"]
@@ -119,17 +118,23 @@ class _FixedDatetime:
         return _T()
 
 
-def test_eval_export_preview(capsys):
+def test_eval_export_preview(capsys, tmp_path):
     cells = _cells()
     ns = {"PROJECT_PATH": str(PROJECT)}
 
     exec(_cell(cells, "from src.llm.client import"), ns)      # imports (no API calls)
     exec(_cell(cells, "MODEL_FAMILY = 'claude'"), ns)          # configuration
 
+    # The config cell resolves EVAL_DIR to the real results directory; redirect the
+    # export so the test never writes into curated artifacts.
+    eval_dir = tmp_path / "eval"
+    eval_dir.mkdir()
+    ns["EVAL_DIR"] = eval_dir
+
     _synthetic_frames(ns)
 
     # All analysis/table cells, in notebook order. Markers must each match exactly
-    # one cell — several substrings now appear in both an old cell and the new
+    # one cell, several substrings now appear in both an old cell and the new
     # report-tables cell, so anchor them to the defining statement.
     for marker in ["def mean_se", "base_means = {c:", "MODEL COMPARISON", "COST AND LATENCY",
                    "jv_per_repeat = (judge_var.groupby", "FULL SIMULATION SCORES BY AGENT",
@@ -140,7 +145,7 @@ def test_eval_export_preview(capsys):
     ns["datetime"] = _FixedDatetime
     exec(_cell(cells, "ExcelWriter"), ns)
 
-    sample_path = PROJECT / "outputs" / "eval" / "evaluation_v2_claude_SAMPLE.xlsx"
+    sample_path = eval_dir / "evaluation_v2_claude_SAMPLE.xlsx"
     assert sample_path.exists(), sample_path
 
     import openpyxl

@@ -1,11 +1,11 @@
 """
-scheduler.py — Intervention event scheduler.
+scheduler.py: Intervention event scheduler.
 
 Loads the scenario YAML into a min-heap (priority queue) sorted by day.
 simulation.py calls get_events(tick) each day to retrieve whatever is due.
 
 Using a heap means the scheduler is O(k log n) per tick (where k = events due
-that day) rather than scanning the full list — this matters when you have
+that day) rather than scanning the full list, this matters when you have
 hundreds of events across a long simulation.
 """
 
@@ -21,11 +21,11 @@ class Event:
     A single intervention event, loaded from the scenario YAML.
 
     Fields match the scenario YAML structure:
-        day           — simulation day this event fires
-        type          — event category (e.g. 'insurance_non_renewal', 'wildfire_news')
-        channel       — delivery channel ('official_mail', 'news_media', 'social', 'direct_experience')
-        target_agents — 'all', a display_name, or comma-separated display names
-        content       — the raw event text delivered to the agent
+        day:           simulation day this event fires
+        type:          event category (e.g. 'insurance_non_renewal', 'wildfire_news')
+        channel:       delivery channel ('official_mail', 'news_media', 'social', 'direct_experience')
+        target_agents: 'all', a display_name, or comma-separated display names
+        content:       the raw event text delivered to the agent
     """
     day: int
     type: str
@@ -46,12 +46,12 @@ class EventScheduler:
         scheduler = EventScheduler("config/scenarios/baseline.yaml")
         events = scheduler.get_events(tick=10)  # returns all events on day 10
 
-    Events are consumed as they're returned — call peek_all() before the
+    Events are consumed as they're returned, call peek_all() before the
     simulation starts to see the full event timeline without consuming anything.
     """
 
     def __init__(self, scenario_path: str):
-        self._heap: List[tuple] = []   # (day, Event) pairs — kept as min-heap
+        self._heap: List[tuple] = []   # (day, Event) pairs, kept as min-heap
         self.scenario_name: str = ""
         self.description: str = ""
         self.duration_days: int = 60
