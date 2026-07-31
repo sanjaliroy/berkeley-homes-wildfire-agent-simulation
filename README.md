@@ -4,6 +4,8 @@
 
 # Simulating Wildfire Mitigation: A Multi-Agent Approach to Community Behavior
 
+[![CI](https://github.com/sanjaliroy/berkeley-homes-wildfire-agent-simulation/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjaliroy/berkeley-homes-wildfire-agent-simulation/actions/workflows/ci.yml)
+
 Code and data for the paper *Simulating Wildfire Mitigation: A Multi-Agent Approach to Community Behavior* (Nambiar, Robson, Melcher, Roy, Paulik — University of California, Berkeley). The full report is in [`paper/`](paper/).
 
 A multi-agent LLM simulation of how Berkeley Hills homeowners respond to wildfire mitigation interventions, grounded in interviews with 20 real residents. The architecture follows Park et al. (2023) — an append-only memory stream, recency/importance/relevance retrieval, and two-stage reflection — but replaces fictional personas with empirically derived ones extracted from interview transcripts.
@@ -64,7 +66,7 @@ Inputs (agents.yaml, baseline.yaml, config YAMLs)
     ↓
 Engine (simulation.py, scheduler.py) — heapq priority queue, tick loop
     ↓
-Environment (channels.py, network.py) — channel framing: official mail / news / social / direct experience
+Environment (network.py → audience, channels.py → framing: official mail / news / social / direct experience)
     ↓
 Agent Cognition — perceive → retrieve → decide → act → store, then reflection check
     ↓
@@ -159,7 +161,7 @@ data/
 src/
   agents/                # agent.py, memory.py, retrieval.py, reflection.py, prompts.py
   engine/                # simulation.py, scheduler.py
-  environment/           # channels.py (event framing), network.py
+  environment/           # network.py (who receives an event), channels.py (how it is framed)
   llm/                   # client.py (model routing, judge functions, usage tracking)
   output/                # logger.py (JSONL)
 notebooks/                 # Numbered in pipeline order

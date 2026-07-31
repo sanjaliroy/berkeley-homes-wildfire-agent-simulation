@@ -22,6 +22,7 @@ from src.agents.agent import Agent
 from src.agents.retrieval import RetrievalConfig
 from src.agents.reflection import ReflectionConfig
 from src.engine.scheduler import EventScheduler
+from src.environment.network import resolve_audience
 from src.llm.client import Config
 from src.output.logger import SimulationLogger
 
@@ -177,25 +178,15 @@ class Simulation:
         """
         Map the target_agents field from the scenario YAML to loaded Agent objects.
 
-        'all'  -> every loaded agent
-        'Name' -> the agent whose display_name matches (case-sensitive)
-        'A, B' -> multiple agents by display_name
+        Audience selection itself lives in the Environment layer
+        (environment/network.py), alongside the channel framing that decides how
+        an event reads once it arrives. This wrapper supplies the loaded agents
+        and the engine's warning behaviour.
         """
-        target_str = str(target_agents).strip()
-        if target_str.lower() == "all":
-            return list(self.agents.values())
+        def _warn(name: str, available: List[str]) -> None:
+            print(f"  [sim] Warning: target '{name}' not loaded. Available: {available}")
 
-        names = [n.strip() for n in target_str.split(",")]
-        targets = []
-        for name in names:
-            if name in self.agents:
-                targets.append(self.agents[name])
-            else:
-                print(
-                    f"  [sim] Warning: target '{name}' not loaded. "
-                    f"Available: {list(self.agents.keys())}"
-                )
-        return targets
+        return resolve_audience(target_agents, self.agents, on_missing=_warn)
 
     # Tick execution
 
