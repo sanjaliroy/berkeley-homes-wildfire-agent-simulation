@@ -264,6 +264,12 @@ sim.close()
 These run in CI on every push and pull request, alongside a check that every notebook still
 parses — a guard against truncated or corrupted cells, which unit tests cannot catch.
 
+The suite covers configuration and cost accounting, JSONL logging, the simulation tick loop,
+and event routing. No test makes a network call: the tick loop is exercised against mocked
+agents, so the suite runs without API keys. The cognition functions — retrieval scoring and
+the reflection trigger — are not directly unit-tested, and are exercised only indirectly
+through full simulation runs.
+
 ## References
 
 Berkeley FireSafe. *Resident Assistance Program.*
