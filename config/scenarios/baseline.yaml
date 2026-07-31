@@ -3,7 +3,7 @@ description: Standard 60-day intervention sequence used for Experiment 1 (ablati
 duration_days: 60
 
 # target_agents matches agent display_name fields in the YAML files.
-# Use "all" to target every loaded agent, or a specific name like "Margaret" or "Eleanor".
+# Use "all" to target every loaded agent, or a specific name like "Margaret" or "Laura".
 
 events:
  
@@ -104,7 +104,7 @@ events:
     whether you are planning to do any work on your side before the next inspection 
     comes around.
  
-# ── Day 36: Firewise community campaign — both agents ────────────────────────
+# ── Day 36: Firewise community campaign ─────────────────────────────────────
 - day: 36
   type: firewise_outreach
   channel: social
@@ -116,7 +116,7 @@ events:
     mitigation work with photos, share contractor referrals, and participate in
     a community workday scheduled for next Saturday.
  
-# ── Day 48: Insurance non-renewal letter — both agents ───────────────────────
+# ── Day 48: Insurance non-renewal letter ────────────────────────────────────
 - day: 48
   type: insurance_non_renewal
   channel: official_mail
@@ -129,7 +129,7 @@ events:
     retrofits prior to renewal may be eligible for reconsideration. Please contact
     your agent with supporting documentation. 
  
-# ── Day 60: Resources assistance — Berkeley FireSafe programs — both agents ───────────
+# ── Day 55: Resources assistance — Berkeley FireSafe programs ───────────────
 - day: 55
   type: resources_assistance
   channel: official_mail
