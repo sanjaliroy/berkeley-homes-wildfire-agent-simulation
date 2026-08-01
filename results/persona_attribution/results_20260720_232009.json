@@ -4,17 +4,17 @@
   "judge_temp": 0.0,
   "rubric": "rubric_v2_locked",
   "agents": {
-    "beth": "Linda",
-    "edward": "Walter",
-    "jennifer": "Laura",
-    "lola": "Margaret",
+    "a001": "Linda",
+    "a003": "Walter",
+    "a005": "Laura",
+    "a006": "Margaret",
     "miriam": "Miriam Voss"
   },
   "owner_ids": [
-    "beth",
-    "edward",
-    "jennifer",
-    "lola"
+    "a001",
+    "a003",
+    "a005",
+    "a006"
   ],
   "renter_id": "miriam",
   "memory_dependent_days": [
