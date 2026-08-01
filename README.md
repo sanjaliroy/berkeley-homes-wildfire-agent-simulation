@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/sanjaliroy/berkeley-homes-wildfire-agent-simulation/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjaliroy/berkeley-homes-wildfire-agent-simulation/actions/workflows/ci.yml)
 
-Code and data for the paper *Simulating Wildfire Mitigation: A Multi-Agent Approach to Community Behavior* (Nambiar, Robson, Melcher, Roy, Paulik — University of California, Berkeley). The full report is in [`paper/`](paper/).
+Code and data for the paper *Simulating Wildfire Mitigation: A Multi-Agent Approach to Community Behavior*. The full report is in [`paper/`](paper/).
 
 A multi-agent LLM simulation of how Berkeley Hills homeowners respond to wildfire mitigation interventions, grounded in interviews with 20 real residents. The architecture follows Park et al. (2023) — an append-only memory stream, recency/importance/relevance retrieval, and two-stage reflection — but replaces fictional personas with empirically derived ones extracted from interview transcripts.
 
