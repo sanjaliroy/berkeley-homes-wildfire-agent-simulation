@@ -311,7 +311,7 @@ memory_seeds:
   importance: 9
   type: observation
   source: institutional
-- description: Someone else on the block was told that as soon as they said 94708,
+- description: Someone else on the block was told that as soon as they said their zip code,
     the insurance company said absolutely not, they don't insure houses in that zip
     code.
   importance: 8
