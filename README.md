@@ -36,10 +36,10 @@ Agent files are keyed by internal ID; the paper refers to them by display name.
 
 | Agent file | Paper name | Source |
 |---|---|---|
-| `jennifer.yaml` | Laura | Interview |
-| `beth.yaml` | Linda | Interview |
-| `edward.yaml` | Walter | Interview |
-| `lola.yaml` | Margaret | Interview |
+| `a005.yaml` | Laura | Interview |
+| `a001.yaml` | Linda | Interview |
+| `a003.yaml` | Walter | Interview |
+| `a006.yaml` | Margaret | Interview |
 | `synthetic_non_compliant.yaml` | Miriam Voss | Synthetic (non-compliant) |
 
 The four interview-derived agents span a range of compliance statuses, financial situations, and levels of institutional trust.
@@ -245,7 +245,7 @@ from src.llm.client import init_clients, Config
 client = init_clients()
 config = SimulationConfig(
     scenario_path="config/scenarios/baseline.yaml",
-    agent_yaml_paths=["config/agents/selected/beth.yaml"],
+    agent_yaml_paths=["config/agents/selected/a001.yaml"],
     llm_config=Config(),
     use_memory=True,
     use_reflection=True,
